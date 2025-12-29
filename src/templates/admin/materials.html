@@ -1,0 +1,1112 @@
+{% extends "base.html" %}
+
+{% block title %}Materialy - {{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .category-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.125rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.625rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .category-stainless {
+        background-color: #059669;
+        color: #ffffff;
+    }
+    .dark .category-stainless {
+        background-color: #10b981;
+        color: #ffffff;
+    }
+
+    .category-carbon {
+        background-color: #1f2937;
+        color: #ffffff;
+    }
+    .dark .category-carbon {
+        background-color: #374151;
+        color: #ffffff;
+    }
+
+    .category-aluminum {
+        background-color: #2563eb;
+        color: #ffffff;
+    }
+    .dark .category-aluminum {
+        background-color: #3b82f6;
+        color: #ffffff;
+    }
+
+    .material-row:hover {
+        background-color: #f9fafb;
+    }
+    .dark .material-row:hover {
+        background-color: #1f2937;
+    }
+
+    .group-header {
+        background-color: #f3f4f6;
+    }
+    .dark .group-header {
+        background-color: #374151;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-4">
+                <a href="/admin" class="p-2 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-steel-600 dark:text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold text-steel-900 dark:text-white">Materialy i Gatunki Stali</h1>
+            </div>
+            <p class="mt-1 text-steel-600 dark:text-steel-400 ml-11">
+                Zarzadzaj grupami materialow i gatunkami stali/aluminium
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="showAddGroupModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Dodaj grupe
+            </button>
+            <button onclick="showAddMaterialModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Dodaj material
+            </button>
+        </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="mb-6">
+        <div class="border-b border-steel-200 dark:border-steel-700">
+            <nav class="flex gap-4" id="category-tabs">
+                <button onclick="loadCategory(null)" data-category="all"
+                        class="category-tab px-4 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-600 dark:text-primary-400">
+                    Wszystkie
+                </button>
+                <button onclick="loadCategory('stal_nierdzewna')" data-category="stal_nierdzewna"
+                        class="category-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-steel-300 dark:hover:border-steel-600 text-steel-600 dark:text-steel-400 hover:text-steel-900 dark:hover:text-white transition-colors">
+                    Stal nierdzewna
+                </button>
+                <button onclick="loadCategory('stal_czarna')" data-category="stal_czarna"
+                        class="category-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-steel-300 dark:hover:border-steel-600 text-steel-600 dark:text-steel-400 hover:text-steel-900 dark:hover:text-white transition-colors">
+                    Stal czarna
+                </button>
+                <button onclick="loadCategory('aluminium')" data-category="aluminium"
+                        class="category-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-steel-300 dark:hover:border-steel-600 text-steel-600 dark:text-steel-400 hover:text-steel-900 dark:hover:text-white transition-colors">
+                    Aluminium
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div id="stats-bar" class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-4">
+            <div class="text-2xl font-bold text-steel-900 dark:text-white" id="stat-groups">-</div>
+            <div class="text-sm text-steel-600 dark:text-steel-400">Grup materialow</div>
+        </div>
+        <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-4">
+            <div class="text-2xl font-bold text-steel-900 dark:text-white" id="stat-materials">-</div>
+            <div class="text-sm text-steel-600 dark:text-steel-400">Materialow</div>
+        </div>
+        <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-4">
+            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400" id="stat-stainless">-</div>
+            <div class="text-sm text-steel-600 dark:text-steel-400">Stal nierdzewna</div>
+        </div>
+        <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-4">
+            <div class="text-2xl font-bold text-sky-600 dark:text-sky-400" id="stat-aluminum">-</div>
+            <div class="text-sm text-steel-600 dark:text-steel-400">Aluminium</div>
+        </div>
+    </div>
+
+    <!-- Groups and Materials Table -->
+    <div class="bg-white dark:bg-steel-900 rounded-xl shadow-lg border border-steel-200 dark:border-steel-700 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-steel-50 dark:bg-steel-800">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">
+                        Gatunek
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">
+                        Norma / AISI
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">
+                        Gestosc
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">
+                        Akcje
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="materials-body">
+                <!-- Dynamic content -->
+            </tbody>
+        </table>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="p-12 text-center">
+            <svg class="animate-spin h-8 w-8 mx-auto text-primary-500" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-steel-600 dark:text-steel-400">Ladowanie materialow...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="p-12 text-center hidden">
+            <svg class="w-16 h-16 mx-auto text-steel-300 dark:text-steel-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            <p class="mt-4 text-steel-600 dark:text-steel-400">Brak materialow</p>
+            <button onclick="showAddGroupModal()" class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                Dodaj pierwsza grupe
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Dodaj Grupe -->
+<div id="add-group-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="hideAddGroupModal()"></div>
+    <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg">
+        <div class="bg-white dark:bg-steel-900 rounded-xl shadow-2xl border border-steel-200 dark:border-steel-700 p-6">
+            <h3 class="text-lg font-semibold text-steel-900 dark:text-white mb-4">Dodaj nowa grupe materialow</h3>
+            <form onsubmit="addGroup(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Nazwa grupy
+                        </label>
+                        <input type="text" id="group-name" required placeholder="np. Austenityczne"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Kategoria
+                        </label>
+                        <select id="group-category" required
+                                class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="stal_nierdzewna">Stal nierdzewna</option>
+                            <option value="stal_czarna">Stal czarna</option>
+                            <option value="aluminium">Aluminium</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Opis (opcjonalnie)
+                        </label>
+                        <textarea id="group-description" rows="2"
+                                  class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                  placeholder="Krotki opis grupy..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Kolejnosc wyswietlania
+                        </label>
+                        <input type="number" id="group-display-order" value="0" min="0"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3 justify-end">
+                    <button type="button" onclick="hideAddGroupModal()" class="px-4 py-2 text-steel-600 dark:text-steel-400 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        Dodaj grupe
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Dodaj Material -->
+<div id="add-material-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="hideAddMaterialModal()"></div>
+    <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white dark:bg-steel-900 rounded-xl shadow-2xl border border-steel-200 dark:border-steel-700 p-6">
+            <h3 class="text-lg font-semibold text-steel-900 dark:text-white mb-4">Dodaj nowy material</h3>
+            <form onsubmit="addMaterial(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Gatunek EN jako glowne pole -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Gatunek EN <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="material-grade" required placeholder="1.4301"
+                               pattern="[0-9]\.[0-9]{4}"
+                               title="Format: 1.xxxx (np. 1.4301)"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500 font-mono">
+                        <p class="text-xs text-steel-500 mt-1">Format: 1.xxxx</p>
+                    </div>
+                    <!-- Gatunek AISI -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Gatunek AISI <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="material-equivalent" required placeholder="304, 316L, 430..."
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500 font-mono">
+                    </div>
+                    <!-- Norma -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Norma <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="material-standard" required placeholder="EN 10088-2"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <!-- Nazwa wyswietlana -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Nazwa wyswietlana
+                        </label>
+                        <input type="text" id="material-name" placeholder="np. 1.4301 2B (auto-generowana)"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                        <p class="text-xs text-steel-500 mt-1">Zostaw puste - utworzy sie automatycznie</p>
+                    </div>
+                    <!-- Kategoria -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Kategoria <span class="text-red-500">*</span>
+                        </label>
+                        <select id="material-category" required onchange="updateGroupOptions()"
+                                class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="stal_nierdzewna">Stal nierdzewna</option>
+                            <option value="stal_czarna">Stal czarna</option>
+                            <option value="aluminium">Aluminium</option>
+                        </select>
+                    </div>
+                    <!-- Grupa -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Grupa
+                        </label>
+                        <select id="material-group"
+                                class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="">-- Bez grupy --</option>
+                        </select>
+                    </div>
+                    <!-- Gestosc -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Gestosc (g/cm3) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" id="material-density" value="7.9" step="0.01" min="0.1" required
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <!-- Kolejnosc -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Kolejnosc wyswietlania
+                        </label>
+                        <input type="number" id="material-display-order" value="0" min="0"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <!-- Sklad chemiczny - pelny -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Sklad chemiczny (wg normy) <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="material-composition" rows="3" required
+                                  class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                                  placeholder="C: max 0.07%, Si: max 1.0%, Mn: max 2.0%, P: max 0.045%, S: max 0.015%, Cr: 17.5-19.5%, Ni: 8.0-10.5%"></textarea>
+                        <p class="text-xs text-steel-500 mt-1">Podaj pelny sklad zgodnie z norma</p>
+                    </div>
+                    <!-- Opis -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Opis / Zastosowania
+                        </label>
+                        <textarea id="material-description" rows="2"
+                                  class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                  placeholder="Zastosowania, wlasciwosci szczegolne..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3 justify-end">
+                    <button type="button" onclick="hideAddMaterialModal()" class="px-4 py-2 text-steel-600 dark:text-steel-400 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Dodaj material
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edytuj Grupe -->
+<div id="edit-group-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="hideEditGroupModal()"></div>
+    <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg">
+        <div class="bg-white dark:bg-steel-900 rounded-xl shadow-2xl border border-steel-200 dark:border-steel-700 p-6">
+            <h3 class="text-lg font-semibold text-steel-900 dark:text-white mb-4">Edytuj grupe materialow</h3>
+            <form onsubmit="updateGroup(event)">
+                <input type="hidden" id="edit-group-id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Nazwa grupy
+                        </label>
+                        <input type="text" id="edit-group-name" required
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Kategoria
+                        </label>
+                        <select id="edit-group-category" required
+                                class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="stal_nierdzewna">Stal nierdzewna</option>
+                            <option value="stal_czarna">Stal czarna</option>
+                            <option value="aluminium">Aluminium</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Opis
+                        </label>
+                        <textarea id="edit-group-description" rows="2"
+                                  class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Kolejnosc wyswietlania
+                        </label>
+                        <input type="number" id="edit-group-display-order" value="0" min="0"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3 justify-end">
+                    <button type="button" onclick="hideEditGroupModal()" class="px-4 py-2 text-steel-600 dark:text-steel-400 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        Zapisz zmiany
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edytuj Material -->
+<div id="edit-material-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="hideEditMaterialModal()"></div>
+    <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white dark:bg-steel-900 rounded-xl shadow-2xl border border-steel-200 dark:border-steel-700 p-6">
+            <h3 class="text-lg font-semibold text-steel-900 dark:text-white mb-4">Edytuj material</h3>
+            <form onsubmit="updateMaterial(event)">
+                <input type="hidden" id="edit-material-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Gatunek EN -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Gatunek EN <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="edit-material-grade" required
+                               pattern="[0-9]\.[0-9]{4}"
+                               title="Format: 1.xxxx (np. 1.4301)"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500 font-mono">
+                        <p class="text-xs text-steel-500 mt-1">Format: 1.xxxx</p>
+                    </div>
+                    <!-- Gatunek AISI -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Gatunek AISI <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="edit-material-equivalent" required
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500 font-mono">
+                    </div>
+                    <!-- Norma -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Norma <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="edit-material-standard" required
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <!-- Nazwa wyswietlana -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Nazwa wyswietlana
+                        </label>
+                        <input type="text" id="edit-material-name"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <!-- Kategoria -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Kategoria <span class="text-red-500">*</span>
+                        </label>
+                        <select id="edit-material-category" required onchange="updateEditGroupOptions()"
+                                class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="stal_nierdzewna">Stal nierdzewna</option>
+                            <option value="stal_czarna">Stal czarna</option>
+                            <option value="aluminium">Aluminium</option>
+                        </select>
+                    </div>
+                    <!-- Grupa -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Grupa
+                        </label>
+                        <select id="edit-material-group"
+                                class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="">-- Bez grupy --</option>
+                        </select>
+                    </div>
+                    <!-- Gestosc -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Gestosc (g/cm3) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" id="edit-material-density" step="0.01" min="0.1" required
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <!-- Kolejnosc -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Kolejnosc wyswietlania
+                        </label>
+                        <input type="number" id="edit-material-display-order" min="0"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <!-- Sklad chemiczny - pelny -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Sklad chemiczny (wg normy) <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="edit-material-composition" rows="3" required
+                                  class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                                  placeholder="C: max 0.07%, Si: max 1.0%, Mn: max 2.0%, P: max 0.045%, S: max 0.015%, Cr: 17.5-19.5%, Ni: 8.0-10.5%"></textarea>
+                        <p class="text-xs text-steel-500 mt-1">Podaj pelny sklad zgodnie z norma</p>
+                    </div>
+                    <!-- Opis -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Opis / Zastosowania
+                        </label>
+                        <textarea id="edit-material-description" rows="2"
+                                  class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3 justify-end">
+                    <button type="button" onclick="hideEditMaterialModal()" class="px-4 py-2 text-steel-600 dark:text-steel-400 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                        Zapisz zmiany
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Row Templates (hidden) -->
+<template id="group-row-template">
+    <tr class="group-header">
+        <td class="px-6 py-3 font-semibold text-steel-900 dark:text-white">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-steel-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                <span class="category-badge"></span>
+                <span class="group-name"></span>
+            </div>
+        </td>
+        <td class="px-6 py-3 text-sm text-steel-600 dark:text-steel-400 group-description"></td>
+        <td class="px-6 py-3 text-sm text-steel-600 dark:text-steel-400">-</td>
+        <td class="px-6 py-3 text-right">
+            <button class="edit-btn p-1 text-steel-500 hover:text-primary-600 dark:hover:text-primary-400" title="Edytuj">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+            </button>
+            <button class="delete-btn p-1 text-steel-500 hover:text-red-600 dark:hover:text-red-400" title="Usun">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </td>
+    </tr>
+</template>
+
+<template id="material-row-template">
+    <tr class="material-row border-t border-steel-100 dark:border-steel-800">
+        <td class="px-6 py-3">
+            <div class="material-name-cell flex items-center gap-3">
+                <span class="category-badge"></span>
+                <div>
+                    <div class="font-medium text-steel-900 dark:text-white font-mono material-grade"></div>
+                    <div class="text-sm text-steel-500 dark:text-steel-400 material-name"></div>
+                </div>
+            </div>
+        </td>
+        <td class="px-6 py-3 text-sm text-steel-600 dark:text-steel-400 material-info"></td>
+        <td class="px-6 py-3 text-sm text-steel-600 dark:text-steel-400 material-density"></td>
+        <td class="px-6 py-3 text-right">
+            <button class="edit-btn p-1 text-steel-500 hover:text-primary-600 dark:hover:text-primary-400" title="Edytuj">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+            </button>
+            <button class="delete-btn p-1 text-steel-500 hover:text-red-600 dark:hover:text-red-400" title="Usun">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </td>
+    </tr>
+</template>
+
+<template id="ungrouped-header-template">
+    <tr class="group-header">
+        <td colspan="4" class="px-6 py-3 font-semibold text-steel-700 dark:text-steel-300">
+            Materialy bez grupy
+        </td>
+    </tr>
+</template>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentCategory = null;
+    let allGroups = [];
+    let allMaterials = [];
+
+    const categoryNames = {
+        'stal_nierdzewna': 'INOX',
+        'stal_czarna': 'MILD',
+        'aluminium': 'ALU'
+    };
+
+    const categoryClasses = {
+        'stal_nierdzewna': 'category-stainless',
+        'stal_czarna': 'category-carbon',
+        'aluminium': 'category-aluminum'
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadData();
+    });
+
+    function setActiveTab(category) {
+        document.querySelectorAll('.category-tab').forEach(function(tab) {
+            var tabCategory = tab.dataset.category;
+            var isActive = (category === null && tabCategory === 'all') || tabCategory === category;
+
+            if (isActive) {
+                tab.classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+                tab.classList.remove('border-transparent', 'text-steel-600', 'dark:text-steel-400');
+            } else {
+                tab.classList.remove('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+                tab.classList.add('border-transparent', 'text-steel-600', 'dark:text-steel-400');
+            }
+        });
+    }
+
+    async function loadData() {
+        document.getElementById('loading-state').classList.remove('hidden');
+        document.getElementById('empty-state').classList.add('hidden');
+        clearTable();
+
+        try {
+            var responses = await Promise.all([
+                fetch('/api/admin/material-groups'),
+                fetch('/api/admin/materials'),
+                fetch('/api/admin/materials/stats')
+            ]);
+
+            allGroups = await responses[0].json();
+            allMaterials = await responses[1].json();
+            var stats = await responses[2].json();
+
+            // Update stats using textContent (safe)
+            document.getElementById('stat-groups').textContent = stats.total_groups;
+            document.getElementById('stat-materials').textContent = stats.total_materials;
+            document.getElementById('stat-stainless').textContent = (stats.by_category && stats.by_category.stal_nierdzewna) ? stats.by_category.stal_nierdzewna.materials : 0;
+            document.getElementById('stat-aluminum').textContent = (stats.by_category && stats.by_category.aluminium) ? stats.by_category.aluminium.materials : 0;
+
+            renderTable();
+            document.getElementById('loading-state').classList.add('hidden');
+            updateGroupOptions();
+
+        } catch (error) {
+            console.error('Error loading data:', error);
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+    }
+
+    function clearTable() {
+        var tbody = document.getElementById('materials-body');
+        while (tbody.firstChild) {
+            tbody.removeChild(tbody.firstChild);
+        }
+    }
+
+    function loadCategory(category) {
+        currentCategory = category;
+        setActiveTab(category);
+        renderTable();
+    }
+
+    function renderTable() {
+        var tbody = document.getElementById('materials-body');
+        clearTable();
+
+        var groups = allGroups;
+        var materials = allMaterials;
+
+        if (currentCategory) {
+            groups = groups.filter(function(g) { return g.category === currentCategory; });
+            materials = materials.filter(function(m) { return m.category === currentCategory; });
+        }
+
+        if (groups.length === 0 && materials.length === 0) {
+            document.getElementById('empty-state').classList.remove('hidden');
+            return;
+        }
+
+        document.getElementById('empty-state').classList.add('hidden');
+
+        // Group materials by group_id
+        var materialsByGroup = {};
+        var ungroupedMaterials = [];
+
+        materials.forEach(function(m) {
+            if (m.group_id) {
+                if (!materialsByGroup[m.group_id]) {
+                    materialsByGroup[m.group_id] = [];
+                }
+                materialsByGroup[m.group_id].push(m);
+            } else {
+                ungroupedMaterials.push(m);
+            }
+        });
+
+        // Render groups with their materials
+        groups.forEach(function(group) {
+            tbody.appendChild(createGroupRow(group));
+
+            var groupMaterials = materialsByGroup[group.id] || [];
+            groupMaterials.forEach(function(material) {
+                tbody.appendChild(createMaterialRow(material, true));
+            });
+        });
+
+        // Render ungrouped materials
+        if (ungroupedMaterials.length > 0) {
+            var template = document.getElementById('ungrouped-header-template');
+            var row = template.content.cloneNode(true);
+            tbody.appendChild(row);
+
+            ungroupedMaterials.forEach(function(material) {
+                tbody.appendChild(createMaterialRow(material, false));
+            });
+        }
+    }
+
+    function createGroupRow(group) {
+        var template = document.getElementById('group-row-template');
+        var row = template.content.cloneNode(true);
+
+        // Set text content safely
+        row.querySelector('.group-name').textContent = group.name;
+        row.querySelector('.group-description').textContent = group.description || '-';
+
+        var badge = row.querySelector('.category-badge');
+        badge.textContent = categoryNames[group.category];
+        badge.classList.add(categoryClasses[group.category]);
+
+        // Add event listeners
+        var editBtn = row.querySelector('.edit-btn');
+        editBtn.addEventListener('click', function() { editGroup(group.id); });
+
+        var deleteBtn = row.querySelector('.delete-btn');
+        deleteBtn.addEventListener('click', function() { deleteGroup(group.id); });
+
+        return row;
+    }
+
+    function createMaterialRow(material, isGrouped) {
+        var template = document.getElementById('material-row-template');
+        var row = template.content.cloneNode(true);
+
+        // Set text content safely
+        row.querySelector('.material-name').textContent = material.name;
+        row.querySelector('.material-grade').textContent = material.grade;
+
+        var infoText = '';
+        if (material.standard) infoText += material.standard;
+        if (material.equivalent_grades) infoText += ' (' + material.equivalent_grades + ')';
+        row.querySelector('.material-info').textContent = infoText || '-';
+
+        row.querySelector('.material-density').textContent = material.density + ' g/cm3';
+
+        var badge = row.querySelector('.category-badge');
+        badge.textContent = categoryNames[material.category];
+        badge.classList.add(categoryClasses[material.category]);
+
+        // Add padding for grouped materials
+        if (isGrouped) {
+            row.querySelector('.material-name-cell').classList.add('pl-8');
+        }
+
+        // Add event listeners
+        var editBtn = row.querySelector('.edit-btn');
+        editBtn.addEventListener('click', function() { editMaterial(material.id); });
+
+        var deleteBtn = row.querySelector('.delete-btn');
+        deleteBtn.addEventListener('click', function() { deleteMaterial(material.id); });
+
+        return row;
+    }
+
+    // Group modal functions
+    function showAddGroupModal() {
+        document.getElementById('add-group-modal').classList.remove('hidden');
+        document.getElementById('group-name').focus();
+    }
+
+    function hideAddGroupModal() {
+        document.getElementById('add-group-modal').classList.add('hidden');
+        document.getElementById('group-name').value = '';
+        document.getElementById('group-description').value = '';
+        document.getElementById('group-display-order').value = '0';
+    }
+
+    async function addGroup(event) {
+        event.preventDefault();
+
+        var data = {
+            name: document.getElementById('group-name').value,
+            category: document.getElementById('group-category').value,
+            description: document.getElementById('group-description').value || null,
+            display_order: parseInt(document.getElementById('group-display-order').value) || 0
+        };
+
+        try {
+            var response = await fetch('/api/admin/material-groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                hideAddGroupModal();
+                loadData();
+            } else {
+                var error = await response.json();
+                alert('Blad: ' + (error.detail || 'Nieznany blad'));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    function editGroup(id) {
+        var group = allGroups.find(function(g) { return g.id === id; });
+        if (!group) return;
+
+        document.getElementById('edit-group-id').value = group.id;
+        document.getElementById('edit-group-name').value = group.name;
+        document.getElementById('edit-group-category').value = group.category;
+        document.getElementById('edit-group-description').value = group.description || '';
+        document.getElementById('edit-group-display-order').value = group.display_order;
+
+        document.getElementById('edit-group-modal').classList.remove('hidden');
+    }
+
+    function hideEditGroupModal() {
+        document.getElementById('edit-group-modal').classList.add('hidden');
+    }
+
+    async function updateGroup(event) {
+        event.preventDefault();
+
+        var id = document.getElementById('edit-group-id').value;
+        var data = {
+            name: document.getElementById('edit-group-name').value,
+            category: document.getElementById('edit-group-category').value,
+            description: document.getElementById('edit-group-description').value || null,
+            display_order: parseInt(document.getElementById('edit-group-display-order').value) || 0
+        };
+
+        try {
+            var response = await fetch('/api/admin/material-groups/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                hideEditGroupModal();
+                loadData();
+            } else {
+                var error = await response.json();
+                alert('Blad: ' + (error.detail || 'Nieznany blad'));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    async function deleteGroup(id) {
+        if (!confirm('Czy na pewno chcesz usunac te grupe? Materialy zostana, ale straca przypisanie do grupy.')) {
+            return;
+        }
+
+        try {
+            var response = await fetch('/api/admin/material-groups/' + id, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                loadData();
+            } else {
+                var error = await response.json();
+                alert('Blad: ' + (error.detail || 'Nieznany blad'));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    // Material modal functions
+    function updateGroupOptions() {
+        var category = document.getElementById('material-category').value;
+        var select = document.getElementById('material-group');
+
+        // Clear existing options
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+
+        var filteredGroups = allGroups.filter(function(g) { return g.category === category; });
+        filteredGroups.forEach(function(group) {
+            var option = document.createElement('option');
+            option.value = group.id;
+            option.textContent = group.name;
+            select.appendChild(option);
+        });
+    }
+
+    function updateEditGroupOptions() {
+        var category = document.getElementById('edit-material-category').value;
+        var select = document.getElementById('edit-material-group');
+        var currentValue = select.value;
+
+        // Clear existing options except first
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+
+        var filteredGroups = allGroups.filter(function(g) { return g.category === category; });
+        filteredGroups.forEach(function(group) {
+            var option = document.createElement('option');
+            option.value = group.id;
+            option.textContent = group.name;
+            if (group.id == currentValue) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+
+    function showAddMaterialModal() {
+        updateGroupOptions();
+        document.getElementById('add-material-modal').classList.remove('hidden');
+        document.getElementById('material-grade').focus();
+    }
+
+    function hideAddMaterialModal() {
+        document.getElementById('add-material-modal').classList.add('hidden');
+        document.getElementById('material-name').value = '';
+        document.getElementById('material-grade').value = '';
+        document.getElementById('material-standard').value = '';
+        document.getElementById('material-equivalent').value = '';
+        document.getElementById('material-density').value = '7.9';
+        document.getElementById('material-composition').value = '';
+        document.getElementById('material-description').value = '';
+        document.getElementById('material-display-order').value = '0';
+    }
+
+    async function addMaterial(event) {
+        event.preventDefault();
+
+        var groupId = document.getElementById('material-group').value;
+        var grade = document.getElementById('material-grade').value.trim();
+        var aisi = document.getElementById('material-equivalent').value.trim();
+        var name = document.getElementById('material-name').value.trim();
+
+        // Auto-generuj nazwe jesli pusta
+        if (!name) {
+            name = grade + ' (AISI ' + aisi + ')';
+        }
+
+        var data = {
+            name: name,
+            grade: grade,
+            category: document.getElementById('material-category').value,
+            group_id: groupId ? parseInt(groupId) : null,
+            standard: document.getElementById('material-standard').value || null,
+            equivalent_grades: 'AISI ' + aisi,
+            density: parseFloat(document.getElementById('material-density').value) || 7.9,
+            composition: document.getElementById('material-composition').value || null,
+            description: document.getElementById('material-description').value || null,
+            display_order: parseInt(document.getElementById('material-display-order').value) || 0
+        };
+
+        try {
+            var response = await fetch('/api/admin/materials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                hideAddMaterialModal();
+                loadData();
+            } else {
+                var error = await response.json();
+                alert('Blad: ' + (error.detail || 'Nieznany blad'));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    function editMaterial(id) {
+        var material = allMaterials.find(function(m) { return m.id === id; });
+        if (!material) return;
+
+        // Usun prefix "AISI " z equivalent_grades do wyswietlenia
+        var aisiValue = material.equivalent_grades || '';
+        if (aisiValue.toUpperCase().startsWith('AISI ')) {
+            aisiValue = aisiValue.substring(5);
+        }
+
+        document.getElementById('edit-material-id').value = material.id;
+        document.getElementById('edit-material-name').value = material.name;
+        document.getElementById('edit-material-grade').value = material.grade;
+        document.getElementById('edit-material-category').value = material.category;
+        document.getElementById('edit-material-standard').value = material.standard || '';
+        document.getElementById('edit-material-equivalent').value = aisiValue;
+        document.getElementById('edit-material-density').value = material.density;
+        document.getElementById('edit-material-composition').value = material.composition || '';
+        document.getElementById('edit-material-description').value = material.description || '';
+        document.getElementById('edit-material-display-order').value = material.display_order;
+
+        updateEditGroupOptions();
+        document.getElementById('edit-material-group').value = material.group_id || '';
+
+        document.getElementById('edit-material-modal').classList.remove('hidden');
+    }
+
+    function hideEditMaterialModal() {
+        document.getElementById('edit-material-modal').classList.add('hidden');
+    }
+
+    async function updateMaterial(event) {
+        event.preventDefault();
+
+        var id = document.getElementById('edit-material-id').value;
+        var groupId = document.getElementById('edit-material-group').value;
+        var grade = document.getElementById('edit-material-grade').value.trim();
+        var aisi = document.getElementById('edit-material-equivalent').value.trim();
+        var name = document.getElementById('edit-material-name').value.trim();
+
+        // Auto-generuj nazwe jesli pusta
+        if (!name) {
+            name = grade + ' (AISI ' + aisi + ')';
+        }
+
+        // Dodaj prefix AISI jesli nie ma
+        var equivalentGrades = aisi;
+        if (aisi && !aisi.toUpperCase().startsWith('AISI')) {
+            equivalentGrades = 'AISI ' + aisi;
+        }
+
+        var data = {
+            name: name,
+            grade: grade,
+            category: document.getElementById('edit-material-category').value,
+            group_id: groupId ? parseInt(groupId) : null,
+            standard: document.getElementById('edit-material-standard').value || null,
+            equivalent_grades: equivalentGrades || null,
+            density: parseFloat(document.getElementById('edit-material-density').value) || 7.9,
+            composition: document.getElementById('edit-material-composition').value || null,
+            description: document.getElementById('edit-material-description').value || null,
+            display_order: parseInt(document.getElementById('edit-material-display-order').value) || 0
+        };
+
+        try {
+            var response = await fetch('/api/admin/materials/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                hideEditMaterialModal();
+                loadData();
+            } else {
+                var error = await response.json();
+                alert('Blad: ' + (error.detail || 'Nieznany blad'));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    async function deleteMaterial(id) {
+        if (!confirm('Czy na pewno chcesz usunac ten material?')) {
+            return;
+        }
+
+        try {
+            var response = await fetch('/api/admin/materials/' + id, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                loadData();
+            } else {
+                var error = await response.json();
+                alert('Blad: ' + (error.detail || 'Nieznany blad'));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideAddGroupModal();
+            hideAddMaterialModal();
+            hideEditGroupModal();
+            hideEditMaterialModal();
+        }
+    });
+</script>
+{% endblock %}

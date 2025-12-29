@@ -1,0 +1,530 @@
+{% extends "base.html" %}
+
+{% block title %}Matryce Cen - {{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .price-input {
+        width: 80px;
+        text-align: center;
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .price-input:focus {
+        outline: none;
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+    }
+
+    .price-input.has-price {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .price-input.no-price {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .dark .price-input.has-price {
+        background-color: rgba(34, 197, 94, 0.2);
+        color: #86efac;
+    }
+
+    .dark .price-input.no-price {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+    }
+
+    .price-input.saving {
+        background-color: #fef9c3 !important;
+        color: #854d0e !important;
+    }
+
+    .price-input.saved {
+        animation: flash-green 0.5s ease;
+    }
+
+    @keyframes flash-green {
+        0% { background-color: #22c55e; }
+        100% { background-color: inherit; }
+    }
+
+    .matrix-table {
+        font-size: 0.875rem;
+    }
+
+    .matrix-table th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .matrix-table th:first-child {
+        left: 0;
+        z-index: 20;
+    }
+
+    .matrix-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+    }
+
+    /* Category tab styles */
+    .category-tab {
+        transition: all 0.2s;
+    }
+
+    .category-tab.active-inox {
+        border-color: #22c55e;
+        color: #16a34a;
+        background-color: rgba(34, 197, 94, 0.1);
+    }
+
+    .category-tab.active-mild {
+        border-color: #374151;
+        color: #1f2937;
+        background-color: rgba(55, 65, 81, 0.1);
+    }
+
+    .category-tab.active-alu {
+        border-color: #3b82f6;
+        color: #2563eb;
+        background-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .dark .category-tab.active-inox {
+        color: #86efac;
+        background-color: rgba(34, 197, 94, 0.2);
+    }
+
+    .dark .category-tab.active-mild {
+        border-color: #9ca3af;
+        color: #f3f4f6;
+        background-color: rgba(156, 163, 175, 0.2);
+    }
+
+    .dark .category-tab.active-alu {
+        color: #93c5fd;
+        background-color: rgba(59, 130, 246, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-4">
+                <a href="/admin" class="p-2 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-steel-600 dark:text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold text-steel-900 dark:text-white">Matryce Cen Bazowych</h1>
+            </div>
+            <p class="mt-1 text-steel-600 dark:text-steel-400 ml-11">
+                Edytuj ceny bazowe PLN/kg dla gatunkow stali i aluminium.
+            </p>
+        </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="mb-6">
+        <div class="border-b border-steel-200 dark:border-steel-700">
+            <nav class="flex gap-2" id="category-tabs">
+                <button onclick="setCategory('stal_nierdzewna')" data-category="stal_nierdzewna"
+                        class="category-tab px-6 py-3 text-sm font-bold border-b-2 border-transparent rounded-t-lg hover:bg-steel-50 dark:hover:bg-steel-800 text-steel-600 dark:text-steel-400 transition-colors flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                    INOX
+                </button>
+                <button onclick="setCategory('stal_czarna')" data-category="stal_czarna"
+                        class="category-tab px-6 py-3 text-sm font-bold border-b-2 border-transparent rounded-t-lg hover:bg-steel-50 dark:hover:bg-steel-800 text-steel-600 dark:text-steel-400 transition-colors flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-gray-700 dark:bg-gray-400"></span>
+                    MILD
+                </button>
+                <button onclick="setCategory('aluminium')" data-category="aluminium"
+                        class="category-tab px-6 py-3 text-sm font-bold border-b-2 border-transparent rounded-t-lg hover:bg-steel-50 dark:hover:bg-steel-800 text-steel-600 dark:text-steel-400 transition-colors flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                    ALU
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="mb-6 bg-white dark:bg-steel-900 rounded-xl shadow border border-steel-200 dark:border-steel-700 p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Thickness Filter -->
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Grubosc (mm)</label>
+                <select id="thickness-filter" onchange="loadMatrix()"
+                        class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white">
+                    <option value="0.5">0.5</option>
+                    <option value="0.6">0.6</option>
+                    <option value="0.8">0.8</option>
+                    <option value="1" selected>1.0</option>
+                    <option value="1.2">1.2</option>
+                    <option value="1.5">1.5</option>
+                    <option value="2">2.0</option>
+                    <option value="2.5">2.5</option>
+                    <option value="3">3.0</option>
+                    <option value="4">4.0</option>
+                    <option value="5">5.0</option>
+                    <option value="6">6.0</option>
+                    <option value="8">8.0</option>
+                    <option value="10">10.0</option>
+                    <option value="12">12.0</option>
+                    <option value="15">15.0</option>
+                    <option value="20">20.0</option>
+                </select>
+            </div>
+
+            <!-- Width Filter -->
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Szerokosc (mm)</label>
+                <select id="width-filter" onchange="loadMatrix()"
+                        class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white">
+                    <option value="1000" selected>1000</option>
+                    <option value="1250">1250</option>
+                    <option value="1500">1500</option>
+                    <option value="2000">2000</option>
+                </select>
+            </div>
+
+            <!-- Stats -->
+            <div class="flex items-end">
+                <div class="text-sm text-steel-600 dark:text-steel-400">
+                    <span id="stats-total" class="font-semibold">-</span> materialow,
+                    <span id="stats-with-price" class="text-green-600 dark:text-green-400 font-semibold">-</span> z cena
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matrix Container -->
+    <div class="bg-white dark:bg-steel-900 rounded-xl shadow-lg border border-steel-200 dark:border-steel-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table id="matrix-table" class="matrix-table w-full">
+                <thead id="matrix-head" class="bg-steel-50 dark:bg-steel-800">
+                </thead>
+                <tbody id="matrix-body">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="p-12 text-center">
+            <svg class="animate-spin h-8 w-8 mx-auto text-primary-500" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-steel-600 dark:text-steel-400">Ladowanie matrycy cen...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="p-12 text-center hidden">
+            <svg class="w-16 h-16 mx-auto text-steel-300 dark:text-steel-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="mt-4 text-steel-600 dark:text-steel-400">Brak materialow w wybranej kategorii</p>
+            <a href="/admin/materials" class="mt-4 inline-block px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                Dodaj materialy
+            </a>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="mt-6 space-y-3">
+        <div class="flex items-center gap-6 text-sm text-steel-600 dark:text-steel-400">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-green-100 dark:bg-green-900/30 border border-green-500 rounded"></div>
+                <span>Cena ustalona (> 0 PLN/kg)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-red-100 dark:bg-red-900/30 border border-red-500 rounded"></div>
+                <span>Brak ceny (0 = niedostepny)</span>
+            </div>
+        </div>
+        <p class="text-xs text-steel-500 dark:text-steel-500">
+            Kliknij na komorke aby edytowac cene. Zmiany sa zapisywane automatycznie.
+        </p>
+    </div>
+</div>
+
+<!-- Row Template -->
+<template id="material-row-template">
+    <tr class="material-row border-t border-steel-100 dark:border-steel-800">
+        <td class="px-4 py-2 bg-steel-50 dark:bg-steel-800">
+            <div>
+                <div class="font-medium text-steel-900 dark:text-white font-mono material-grade"></div>
+                <div class="text-xs text-steel-500 dark:text-steel-400 material-name"></div>
+            </div>
+        </td>
+    </tr>
+</template>
+
+<!-- Price Cell Template -->
+<template id="price-cell-template">
+    <td class="px-2 py-2 text-center">
+        <input type="number" step="0.01" min="0"
+               class="price-input"
+               data-material-id=""
+               data-surface-finish=""
+               data-price-id="">
+    </td>
+</template>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentCategory = 'stal_nierdzewna';
+    let currentThickness = 1.0;
+    let currentWidth = 1000;
+    let matrixData = null;
+
+    const categoryTabClasses = {
+        'stal_nierdzewna': 'active-inox',
+        'stal_czarna': 'active-mild',
+        'aluminium': 'active-alu'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setCategory('stal_nierdzewna');
+    });
+
+    function setCategory(category) {
+        currentCategory = category;
+
+        // Update tab styles
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.classList.remove('active-inox', 'active-mild', 'active-alu', 'border-green-500', 'border-gray-700', 'border-blue-500');
+
+            if (tab.dataset.category === category) {
+                tab.classList.add(categoryTabClasses[category]);
+                if (category === 'stal_nierdzewna') tab.classList.add('border-green-500');
+                else if (category === 'stal_czarna') tab.classList.add('border-gray-700');
+                else if (category === 'aluminium') tab.classList.add('border-blue-500');
+            } else {
+                tab.classList.add('border-transparent');
+            }
+        });
+
+        loadMatrix();
+    }
+
+    function getFilters() {
+        currentThickness = parseFloat(document.getElementById('thickness-filter').value);
+        currentWidth = parseFloat(document.getElementById('width-filter').value);
+    }
+
+    async function loadMatrix() {
+        getFilters();
+
+        document.getElementById('loading-state').classList.remove('hidden');
+        document.getElementById('empty-state').classList.add('hidden');
+        clearTable();
+
+        try {
+            const url = `/api/admin/base-prices/matrix?thickness=${currentThickness}&width=${currentWidth}&category=${currentCategory}`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            matrixData = data;
+
+            if (data.materials.length === 0) {
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('empty-state').classList.remove('hidden');
+                updateStats(0, 0);
+                return;
+            }
+
+            renderMatrix(data);
+            document.getElementById('loading-state').classList.add('hidden');
+
+            // Calculate stats
+            let withPrice = 0;
+            for (const mat of data.materials) {
+                for (const sf of data.surface_finishes) {
+                    if (mat.prices[sf] && mat.prices[sf].price > 0) {
+                        withPrice++;
+                    }
+                }
+            }
+            updateStats(data.materials.length, withPrice);
+
+        } catch (error) {
+            console.error('Error loading matrix:', error);
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+    }
+
+    function updateStats(total, withPrice) {
+        document.getElementById('stats-total').textContent = total;
+        document.getElementById('stats-with-price').textContent = withPrice;
+    }
+
+    function clearTable() {
+        const thead = document.getElementById('matrix-head');
+        const tbody = document.getElementById('matrix-body');
+        while (thead.firstChild) thead.removeChild(thead.firstChild);
+        while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    }
+
+    function getPriceClass(price) {
+        return price > 0 ? 'has-price' : 'no-price';
+    }
+
+    function renderMatrix(data) {
+        const thead = document.getElementById('matrix-head');
+        const tbody = document.getElementById('matrix-body');
+        const rowTemplate = document.getElementById('material-row-template');
+        const cellTemplate = document.getElementById('price-cell-template');
+
+        // Build header row
+        const headerRow = document.createElement('tr');
+
+        const thMaterial = document.createElement('th');
+        thMaterial.className = 'px-4 py-3 text-left text-sm font-semibold text-steel-700 dark:text-steel-300 bg-steel-50 dark:bg-steel-800 min-w-48';
+        thMaterial.textContent = 'Gatunek';
+        headerRow.appendChild(thMaterial);
+
+        for (const sf of data.surface_finishes) {
+            const th = document.createElement('th');
+            th.className = 'px-4 py-3 text-center text-sm font-semibold text-steel-700 dark:text-steel-300 bg-steel-50 dark:bg-steel-800';
+            th.textContent = sf;
+            headerRow.appendChild(th);
+        }
+        thead.appendChild(headerRow);
+
+        // Group materials by group_name
+        let currentGroupName = null;
+
+        // Build body rows
+        for (const mat of data.materials) {
+            // Add group header if changed
+            if (mat.group_name !== currentGroupName) {
+                currentGroupName = mat.group_name;
+                if (currentGroupName) {
+                    const groupRow = document.createElement('tr');
+                    groupRow.className = 'bg-steel-100 dark:bg-steel-700';
+                    const groupCell = document.createElement('td');
+                    groupCell.colSpan = data.surface_finishes.length + 1;
+                    groupCell.className = 'px-4 py-2 text-sm font-semibold text-steel-700 dark:text-steel-300';
+                    groupCell.textContent = currentGroupName;
+                    groupRow.appendChild(groupCell);
+                    tbody.appendChild(groupRow);
+                }
+            }
+
+            const rowClone = rowTemplate.content.cloneNode(true);
+            const row = rowClone.querySelector('tr');
+
+            // Set material info
+            row.querySelector('.material-grade').textContent = mat.grade;
+            row.querySelector('.material-name').textContent = mat.name;
+
+            // Add price cells
+            for (const sf of data.surface_finishes) {
+                const cellClone = cellTemplate.content.cloneNode(true);
+                const td = cellClone.querySelector('td');
+                const input = cellClone.querySelector('input');
+
+                const priceData = mat.prices[sf] || { id: null, price: 0 };
+
+                input.value = priceData.price;
+                input.className = 'price-input ' + getPriceClass(priceData.price);
+                input.dataset.materialId = mat.material_id;
+                input.dataset.surfaceFinish = sf;
+                input.dataset.priceId = priceData.id || '';
+
+                input.addEventListener('change', function() {
+                    updatePrice(this);
+                });
+
+                row.appendChild(td);
+            }
+
+            tbody.appendChild(row);
+        }
+    }
+
+    async function updatePrice(input) {
+        const priceId = input.dataset.priceId;
+        const materialId = input.dataset.materialId;
+        const surfaceFinish = input.dataset.surfaceFinish;
+        const price = parseFloat(input.value) || 0;
+
+        input.classList.add('saving');
+        input.classList.remove('has-price', 'no-price');
+
+        try {
+            let response;
+
+            if (priceId) {
+                // Update existing
+                response = await fetch(`/api/admin/base-prices/${priceId}?price=${price}`, {
+                    method: 'PUT',
+                });
+            } else {
+                // Create new
+                response = await fetch('/api/admin/base-prices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        material_id: parseInt(materialId),
+                        surface_finish: surfaceFinish,
+                        thickness: currentThickness,
+                        width: currentWidth,
+                        price: price,
+                    }),
+                });
+            }
+
+            if (response.ok) {
+                const data = await response.json();
+                input.dataset.priceId = data.id;
+                input.classList.remove('saving');
+                input.classList.add(getPriceClass(price));
+                input.classList.add('saved');
+                setTimeout(() => input.classList.remove('saved'), 500);
+
+                // Update stats
+                recalculateStats();
+            } else {
+                throw new Error('Failed to save');
+            }
+        } catch (error) {
+            console.error('Error updating price:', error);
+            input.classList.remove('saving');
+            input.classList.add('no-price');
+            alert('Blad podczas zapisywania ceny');
+        }
+    }
+
+    function recalculateStats() {
+        if (!matrixData) return;
+
+        let withPrice = 0;
+        for (const mat of matrixData.materials) {
+            for (const sf of matrixData.surface_finishes) {
+                const input = document.querySelector(
+                    `input[data-material-id="${mat.material_id}"][data-surface-finish="${sf}"]`
+                );
+                if (input && parseFloat(input.value) > 0) {
+                    withPrice++;
+                }
+            }
+        }
+        updateStats(matrixData.materials.length, withPrice);
+    }
+</script>
+{% endblock %}

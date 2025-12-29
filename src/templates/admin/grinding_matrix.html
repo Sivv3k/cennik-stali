@@ -1,0 +1,627 @@
+{% extends "base.html" %}
+
+{% block title %}Matryce Szlifu - {{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .price-input {
+        width: 70px;
+        text-align: center;
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .price-input:focus {
+        outline: none;
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+    }
+
+    .price-input.available {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .price-input.blocked {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .price-input.inherit {
+        background-color: #fef9c3;
+        color: #854d0e;
+    }
+
+    .dark .price-input.available {
+        background-color: rgba(34, 197, 94, 0.2);
+        color: #86efac;
+    }
+
+    .dark .price-input.blocked {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+    }
+
+    .dark .price-input.inherit {
+        background-color: rgba(234, 179, 8, 0.2);
+        color: #fde047;
+    }
+
+    .price-input.saving {
+        background-color: #fef9c3 !important;
+        color: #854d0e !important;
+    }
+
+    .price-input.saved {
+        animation: flash-green 0.5s ease;
+    }
+
+    @keyframes flash-green {
+        0% { background-color: #22c55e; }
+        100% { background-color: inherit; }
+    }
+
+    .matrix-table {
+        font-size: 0.875rem;
+    }
+
+    .matrix-table th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .matrix-table th:first-child {
+        left: 0;
+        z-index: 20;
+    }
+
+    .matrix-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-4">
+                <a href="/admin" class="p-2 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-steel-600 dark:text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold text-steel-900 dark:text-white">Matryce Szlifu</h1>
+            </div>
+            <p class="mt-1 text-steel-600 dark:text-steel-400 ml-11">
+                Edytuj ceny szlifowania. Cena = 0 blokuje kombinacje.
+            </p>
+        </div>
+        <!-- Add Row/Column Buttons -->
+        <div class="flex gap-2">
+            <button onclick="showAddRowModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Dodaj grubosc
+            </button>
+            <button onclick="showAddColumnModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Dodaj granulacje
+            </button>
+        </div>
+    </div>
+
+    <!-- Provider Tabs -->
+    <div class="mb-6">
+        <div class="border-b border-steel-200 dark:border-steel-700">
+            <nav class="flex gap-4" id="provider-tabs">
+                <button onclick="loadMatrix('CAMU')" data-provider="CAMU"
+                        class="provider-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-steel-300 dark:hover:border-steel-600 text-steel-600 dark:text-steel-400 hover:text-steel-900 dark:hover:text-white transition-colors">
+                    CAMU
+                </button>
+                <button onclick="loadMatrix('BABCIA')" data-provider="BABCIA"
+                        class="provider-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-steel-300 dark:hover:border-steel-600 text-steel-600 dark:text-steel-400 hover:text-steel-900 dark:hover:text-white transition-colors">
+                    BABCIA
+                </button>
+                <button onclick="loadMatrix('BORYS')" data-provider="BORYS"
+                        class="provider-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-steel-300 dark:hover:border-steel-600 text-steel-600 dark:text-steel-400 hover:text-steel-900 dark:hover:text-white transition-colors">
+                    BORYS
+                </button>
+                <button onclick="loadMatrix('COSTA')" data-provider="COSTA"
+                        class="provider-tab px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-steel-300 dark:hover:border-steel-600 text-steel-600 dark:text-steel-400 hover:text-steel-900 dark:hover:text-white transition-colors">
+                    COSTA
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Width Variant (for BORYS) -->
+    <div id="width-variant-selector" class="mb-4 hidden">
+        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Wariant szerokosci:</label>
+        <div class="flex gap-4">
+            <label class="flex items-center">
+                <input type="radio" name="width_variant" value="x1000/1250/1500" checked
+                       onchange="loadMatrix(currentProvider)" class="mr-2">
+                <span class="text-sm text-steel-600 dark:text-steel-400">x1000/1250/1500</span>
+            </label>
+            <label class="flex items-center">
+                <input type="radio" name="width_variant" value="x2000"
+                       onchange="loadMatrix(currentProvider)" class="mr-2">
+                <span class="text-sm text-steel-600 dark:text-steel-400">x2000</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Matrix Container -->
+    <div class="bg-white dark:bg-steel-900 rounded-xl shadow-lg border border-steel-200 dark:border-steel-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table id="matrix-table" class="matrix-table w-full">
+                <thead id="matrix-head" class="bg-steel-50 dark:bg-steel-800">
+                </thead>
+                <tbody id="matrix-body">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="p-12 text-center">
+            <svg class="animate-spin h-8 w-8 mx-auto text-primary-500" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-steel-600 dark:text-steel-400">Ladowanie matrycy...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="p-12 text-center hidden">
+            <svg class="w-16 h-16 mx-auto text-steel-300 dark:text-steel-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="mt-4 text-steel-600 dark:text-steel-400">Brak danych dla tego dostawcy</p>
+            <button onclick="initProvider()" class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                Inicjalizuj matrycę
+            </button>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="mt-6 space-y-3">
+        <div class="flex items-center gap-6 text-sm text-steel-600 dark:text-steel-400">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-green-100 dark:bg-green-900/30 border border-green-500 rounded"></div>
+                <span>Dostepny (cena > 0)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-500 rounded"></div>
+                <span>Dziedzicz z poprzedniej (cena = 0)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-red-100 dark:bg-red-900/30 border border-red-500 rounded"></div>
+                <span>Zablokowany (cena < 0)</span>
+            </div>
+        </div>
+        <p class="text-xs text-steel-500 dark:text-steel-500">
+            Grubosc oznacza "<=" - np. 10mm to zakres od poprzedniej wartosci do 10mm wlacznie.
+        </p>
+    </div>
+</div>
+
+<!-- Modal: Dodaj Grubosc -->
+<div id="add-row-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="hideAddRowModal()"></div>
+    <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md">
+        <div class="bg-white dark:bg-steel-900 rounded-xl shadow-2xl border border-steel-200 dark:border-steel-700 p-6">
+            <h3 class="text-lg font-semibold text-steel-900 dark:text-white mb-4">Dodaj nowa grubosc</h3>
+            <form onsubmit="addRow(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Grubosc (mm)
+                        </label>
+                        <input type="number" id="new-thickness" step="0.1" min="0.1" required
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Domyslna cena (PLN/kg)
+                        </label>
+                        <input type="number" id="new-thickness-price" step="0.01" min="0" value="0"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                        <p class="text-xs text-steel-500 mt-1">Zostaw 0 aby zablokowac wszystkie kombinacje</p>
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3 justify-end">
+                    <button type="button" onclick="hideAddRowModal()" class="px-4 py-2 text-steel-600 dark:text-steel-400 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        Dodaj
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Dodaj Granulacje -->
+<div id="add-column-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="hideAddColumnModal()"></div>
+    <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md">
+        <div class="bg-white dark:bg-steel-900 rounded-xl shadow-2xl border border-steel-200 dark:border-steel-700 p-6">
+            <h3 class="text-lg font-semibold text-steel-900 dark:text-white mb-4">Dodaj nowa granulacje</h3>
+            <form onsubmit="addColumn(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Granulacja (np. K500, K600)
+                        </label>
+                        <input type="text" id="new-grit" required placeholder="np. K500"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 text-sm text-steel-700 dark:text-steel-300">
+                            <input type="checkbox" id="new-grit-sb" class="rounded border-steel-300 dark:border-steel-600">
+                            Z SB (Scotch-Brite)
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Domyslna cena (PLN/kg)
+                        </label>
+                        <input type="number" id="new-grit-price" step="0.01" min="0" value="0"
+                               class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                        <p class="text-xs text-steel-500 mt-1">Zostaw 0 aby zablokowac wszystkie kombinacje</p>
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3 justify-end">
+                    <button type="button" onclick="hideAddColumnModal()" class="px-4 py-2 text-steel-600 dark:text-steel-400 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg transition-colors">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Dodaj
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentProvider = null;
+    let matrixData = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMatrix('CAMU');
+    });
+
+    function setActiveTab(provider) {
+        document.querySelectorAll('.provider-tab').forEach(tab => {
+            if (tab.dataset.provider === provider) {
+                tab.classList.add('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+                tab.classList.remove('border-transparent', 'text-steel-600', 'dark:text-steel-400');
+            } else {
+                tab.classList.remove('border-primary-500', 'text-primary-600', 'dark:text-primary-400');
+                tab.classList.add('border-transparent', 'text-steel-600', 'dark:text-steel-400');
+            }
+        });
+    }
+
+    async function loadMatrix(provider) {
+        currentProvider = provider;
+        setActiveTab(provider);
+
+        const widthSelector = document.getElementById('width-variant-selector');
+        if (provider === 'BORYS') {
+            widthSelector.classList.remove('hidden');
+        } else {
+            widthSelector.classList.add('hidden');
+        }
+
+        let widthVariant = null;
+        if (provider === 'BORYS') {
+            widthVariant = document.querySelector('input[name="width_variant"]:checked')?.value;
+        }
+
+        document.getElementById('loading-state').classList.remove('hidden');
+        document.getElementById('empty-state').classList.add('hidden');
+        clearTable();
+
+        try {
+            let url = '/api/admin/grinding-prices/matrix/' + encodeURIComponent(provider);
+            if (widthVariant) {
+                url += '?width_variant=' + encodeURIComponent(widthVariant);
+            }
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            matrixData = data;
+
+            if (data.thicknesses.length === 0) {
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('empty-state').classList.remove('hidden');
+                return;
+            }
+
+            renderMatrix(data);
+            document.getElementById('loading-state').classList.add('hidden');
+        } catch (error) {
+            console.error('Error loading matrix:', error);
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+    }
+
+    function clearTable() {
+        const thead = document.getElementById('matrix-head');
+        const tbody = document.getElementById('matrix-body');
+        while (thead.firstChild) thead.removeChild(thead.firstChild);
+        while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    }
+
+    function getPriceClass(price) {
+        if (price < 0) return 'blocked';
+        if (price === 0) return 'inherit';
+        return 'available';
+    }
+
+    function renderMatrix(data) {
+        const thead = document.getElementById('matrix-head');
+        const tbody = document.getElementById('matrix-body');
+
+        // Build header row
+        const headerRow = document.createElement('tr');
+
+        const thThickness = document.createElement('th');
+        thThickness.className = 'px-4 py-3 text-left text-sm font-semibold text-steel-700 dark:text-steel-300 bg-steel-50 dark:bg-steel-800';
+        thThickness.textContent = 'Grubosc (mm)';
+        headerRow.appendChild(thThickness);
+
+        for (const grit of data.grits) {
+            const th = document.createElement('th');
+            th.className = 'px-4 py-3 text-center text-sm font-semibold text-steel-700 dark:text-steel-300 bg-steel-50 dark:bg-steel-800';
+            th.textContent = grit.replace('_sb', ' +SB');
+            headerRow.appendChild(th);
+        }
+        thead.appendChild(headerRow);
+
+        // Build body rows
+        for (const thickness of data.thicknesses) {
+            const row = document.createElement('tr');
+            row.className = 'border-t border-steel-100 dark:border-steel-800';
+
+            const tdThickness = document.createElement('td');
+            tdThickness.className = 'px-4 py-2 text-sm font-medium text-steel-900 dark:text-white bg-steel-50 dark:bg-steel-800';
+            tdThickness.textContent = thickness;
+            row.appendChild(tdThickness);
+
+            for (const grit of data.grits) {
+                const td = document.createElement('td');
+                td.className = 'px-2 py-2 text-center';
+
+                const cell = data.matrix[thickness]?.[grit];
+                if (cell) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.className = 'price-input ' + getPriceClass(cell.price);
+                    input.value = cell.price;
+                    input.dataset.id = cell.id;
+                    input.dataset.thickness = thickness;
+                    input.dataset.grit = cell.grit;
+                    input.dataset.withSb = cell.with_sb;
+                    input.step = '0.01';
+                    input.addEventListener('change', function() { updatePrice(this); });
+                    td.appendChild(input);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.className = 'price-input inherit';
+                    input.value = 0;
+                    input.disabled = true;
+                    td.appendChild(input);
+                }
+                row.appendChild(td);
+            }
+            tbody.appendChild(row);
+        }
+    }
+
+    async function updatePrice(input) {
+        const id = input.dataset.id;
+        const price = parseFloat(input.value) || 0;
+
+        input.classList.add('saving');
+        input.classList.remove('available', 'blocked', 'inherit');
+
+        try {
+            const response = await fetch('/api/admin/grinding-prices/' + encodeURIComponent(id) + '?price=' + encodeURIComponent(price), {
+                method: 'PUT',
+            });
+
+            if (response.ok) {
+                input.classList.remove('saving');
+                input.classList.add(getPriceClass(price));
+                input.classList.add('saved');
+                setTimeout(() => input.classList.remove('saved'), 500);
+            } else {
+                throw new Error('Failed to save');
+            }
+        } catch (error) {
+            console.error('Error updating price:', error);
+            input.classList.remove('saving');
+            input.classList.add('blocked');
+            alert('Blad podczas zapisywania ceny');
+        }
+    }
+
+    async function initProvider() {
+        if (!currentProvider) return;
+
+        if (currentProvider === 'COSTA') {
+            if (!confirm('Inicjalizowac COSTA na podstawie BABCIA?')) return;
+
+            try {
+                const response = await fetch('/api/admin/grinding-prices/init-costa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        copy_from: 'BABCIA',
+                        blocked_thickness_min: 0.8,
+                        blocked_thickness_max: 6.0,
+                    }),
+                });
+
+                if (response.ok) {
+                    loadMatrix(currentProvider);
+                } else {
+                    alert('Blad podczas inicjalizacji');
+                }
+            } catch (error) {
+                alert('Blad sieci: ' + error.message);
+            }
+        } else {
+            alert('Inicjalizacja dla ' + currentProvider + ' - funkcja w przygotowaniu');
+        }
+    }
+
+    // Modal functions
+    function showAddRowModal() {
+        if (!currentProvider) {
+            alert('Najpierw wybierz dostawce');
+            return;
+        }
+        document.getElementById('add-row-modal').classList.remove('hidden');
+        document.getElementById('new-thickness').focus();
+    }
+
+    function hideAddRowModal() {
+        document.getElementById('add-row-modal').classList.add('hidden');
+        document.getElementById('new-thickness').value = '';
+        document.getElementById('new-thickness-price').value = '0';
+    }
+
+    function showAddColumnModal() {
+        if (!currentProvider) {
+            alert('Najpierw wybierz dostawce');
+            return;
+        }
+        document.getElementById('add-column-modal').classList.remove('hidden');
+        document.getElementById('new-grit').focus();
+    }
+
+    function hideAddColumnModal() {
+        document.getElementById('add-column-modal').classList.add('hidden');
+        document.getElementById('new-grit').value = '';
+        document.getElementById('new-grit-sb').checked = false;
+        document.getElementById('new-grit-price').value = '0';
+    }
+
+    async function addRow(event) {
+        event.preventDefault();
+
+        const thickness = parseFloat(document.getElementById('new-thickness').value);
+        const defaultPrice = parseFloat(document.getElementById('new-thickness-price').value) || 0;
+
+        if (!thickness || thickness <= 0) {
+            alert('Podaj poprawna grubosc');
+            return;
+        }
+
+        let url = '/api/admin/grinding-prices/matrix/' + encodeURIComponent(currentProvider) + '/add-row';
+        if (currentProvider === 'BORYS') {
+            const widthVariant = document.querySelector('input[name="width_variant"]:checked')?.value;
+            if (widthVariant) {
+                url += '?width_variant=' + encodeURIComponent(widthVariant);
+            }
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    thickness: thickness,
+                    default_price: defaultPrice,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                hideAddRowModal();
+                loadMatrix(currentProvider);
+                alert(data.message);
+            } else {
+                alert('Blad: ' + (data.detail || 'Nieznany blad'));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    async function addColumn(event) {
+        event.preventDefault();
+
+        const grit = document.getElementById('new-grit').value.trim();
+        const withSb = document.getElementById('new-grit-sb').checked;
+        const defaultPrice = parseFloat(document.getElementById('new-grit-price').value) || 0;
+
+        if (!grit) {
+            alert('Podaj nazwe granulacji');
+            return;
+        }
+
+        let url = '/api/admin/grinding-prices/matrix/' + encodeURIComponent(currentProvider) + '/add-column';
+        if (currentProvider === 'BORYS') {
+            const widthVariant = document.querySelector('input[name="width_variant"]:checked')?.value;
+            if (widthVariant) {
+                url += '?width_variant=' + encodeURIComponent(widthVariant);
+            }
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    grit: grit,
+                    with_sb: withSb,
+                    default_price: defaultPrice,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                hideAddColumnModal();
+                loadMatrix(currentProvider);
+                alert(data.message);
+            } else {
+                alert('Blad: ' + (data.detail || 'Nieznany blad'));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideAddRowModal();
+            hideAddColumnModal();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,1114 @@
+"""Endpointy administracyjne - zarządzanie matrycami cen i materiałami."""
+
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session, joinedload
+
+from ..database import get_db
+from ..models import (
+    GrindingPrice,
+    GrindingProvider,
+    FilmPrice,
+    FilmType,
+    User,
+    Material,
+    MaterialGroup,
+    MaterialCategory,
+    SurfaceFinish,
+)
+from ..models.price import BasePrice
+from ..auth.dependencies import get_current_user
+from ..services import GrindingValidationService
+from ..schemas.admin import (
+    GrindingMatrixResponse,
+    GrindingPriceUpdate,
+    GrindingBulkUpdateRequest,
+    GrindingBulkUpdateResponse,
+    AvailableProvidersResponse,
+    FilmMatrixResponse,
+    FilmPriceUpdate,
+    FilmBulkUpdateRequest,
+    COSTAInitRequest,
+    COSTAInitResponse,
+    GrindingAvailabilityCheck,
+    GrindingAvailabilityResponse,
+    AddGrindingRowRequest,
+    AddGrindingColumnRequest,
+    AddFilmRowRequest,
+    AddMatrixResponse,
+    BasePriceMatrixResponse,
+    BasePriceMaterialRow,
+    BasePriceCell,
+    BasePriceUpdate,
+    BasePriceBulkUpdateRequest,
+    BasePriceBulkUpdateResponse,
+)
+from ..schemas.pricing import (
+    MaterialGroupCreate,
+    MaterialGroupUpdate,
+    MaterialGroupResponse,
+    MaterialGroupWithMaterials,
+    MaterialCreate,
+    MaterialUpdate,
+    MaterialResponse,
+    MaterialWithGroup,
+)
+
+router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+
+# === Grinding Matrix Endpoints ===
+
+@router.get("/grinding-prices/matrix/{provider}", response_model=GrindingMatrixResponse)
+async def get_grinding_matrix(
+    provider: GrindingProvider,
+    width_variant: Optional[str] = Query(None, description="Wariant szerokości dla BORYS"),
+    db: Session = Depends(get_db),
+):
+    """Pobierz pełną matrycę cen szlifu (grubość x granulacja).
+
+    Zwraca wszystkie grubości - te z ceną 0 są zablokowane.
+    """
+    service = GrindingValidationService(db)
+    return service.get_grinding_matrix(provider, width_variant)
+
+
+@router.put("/grinding-prices/matrix/{provider}/bulk", response_model=GrindingBulkUpdateResponse)
+async def update_grinding_matrix_bulk(
+    provider: GrindingProvider,
+    request: GrindingBulkUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Masowa aktualizacja matrycy cen szlifu.
+
+    Wpisanie ceny = 0 blokuje kombinację.
+    Wpisanie ceny > 0 odblokowuje kombinację.
+    """
+    service = GrindingValidationService(db)
+    count = service.bulk_update_matrix(provider, [u.model_dump() for u in request.updates])
+
+    return GrindingBulkUpdateResponse(
+        updated=count,
+        provider=provider.value,
+    )
+
+
+@router.put("/grinding-prices/{price_id}")
+async def update_grinding_price(
+    price_id: int,
+    price: float = Query(..., description="Cena PLN/kg (>0=dostepny, 0=dziedzicz, <0=blokada)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aktualizuj pojedynczą cenę szlifu.
+
+    Do użycia z HTMX dla inline edycji w matrycy.
+    """
+    grinding_price = db.query(GrindingPrice).filter(GrindingPrice.id == price_id).first()
+
+    if not grinding_price:
+        raise HTTPException(status_code=404, detail="Cena nie znaleziona")
+
+    grinding_price.price_pln_per_kg = price
+    db.commit()
+
+    return {
+        "id": grinding_price.id,
+        "price": grinding_price.price_pln_per_kg,
+        "is_blocked": grinding_price.price_pln_per_kg == 0,
+    }
+
+
+@router.get("/grinding-prices/available")
+async def get_available_providers(
+    thickness: float = Query(..., gt=0, description="Grubość blachy w mm"),
+    width: float = Query(..., gt=0, description="Szerokość blachy w mm"),
+    grit: Optional[str] = Query(None, description="Granulacja do filtrowania"),
+    db: Session = Depends(get_db),
+):
+    """Pobierz dostępnych dostawców szlifu dla parametrów.
+
+    Zwraca tylko te opcje gdzie cena > 0 w matrycy.
+    """
+    service = GrindingValidationService(db)
+    providers = service.get_available_providers(thickness, width, grit)
+
+    return {
+        "providers": providers,
+        "thickness": thickness,
+        "width": width,
+    }
+
+
+@router.post("/grinding-prices/check", response_model=GrindingAvailabilityResponse)
+async def check_grinding_availability(
+    request: GrindingAvailabilityCheck,
+    db: Session = Depends(get_db),
+):
+    """Sprawdź czy konkretna konfiguracja szlifu jest dostępna."""
+    service = GrindingValidationService(db)
+    is_available, price = service.is_grinding_available(
+        provider=request.provider,
+        thickness=request.thickness,
+        width=request.width,
+        grit=request.grit,
+        with_sb=request.with_sb,
+    )
+
+    reason = None
+    if not is_available:
+        reason = "Kombinacja zablokowana w matrycy cen (cena = 0)"
+
+    return GrindingAvailabilityResponse(
+        is_available=is_available,
+        price=price,
+        provider=request.provider.value,
+        thickness=request.thickness,
+        grit=request.grit,
+        reason=reason,
+    )
+
+
+@router.get("/grinding-prices/providers")
+async def list_grinding_providers():
+    """Lista wszystkich dostawców szlifu."""
+    return {
+        "providers": [
+            {"value": p.value, "name": p.value}
+            for p in GrindingProvider
+        ]
+    }
+
+
+# === COSTA Initialization ===
+
+@router.post("/grinding-prices/init-costa", response_model=COSTAInitResponse)
+async def initialize_costa_prices(
+    request: COSTAInitRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Inicjalizuj matrycę cen dla COSTA.
+
+    Kopiuje ceny od wybranego dostawcy (domyślnie BABCIA)
+    i ustawia ceny = 0 dla grubości poza zakresem.
+    """
+    # Pobierz ceny źródłowe
+    source_prices = db.query(GrindingPrice).filter(
+        GrindingPrice.provider == request.copy_from,
+        GrindingPrice.is_active == True,
+    ).all()
+
+    if not source_prices:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Brak cen dla dostawcy {request.copy_from.value}"
+        )
+
+    created = 0
+    blocked = 0
+    available = 0
+
+    for source in source_prices:
+        # Sprawdź czy kombinacja już istnieje
+        existing = db.query(GrindingPrice).filter(
+            GrindingPrice.provider == GrindingProvider.COSTA,
+            GrindingPrice.thickness == source.thickness,
+            GrindingPrice.grit == source.grit,
+            GrindingPrice.width_variant == source.width_variant,
+            GrindingPrice.with_sb == source.with_sb,
+        ).first()
+
+        if existing:
+            continue
+
+        # Określ czy grubość jest w dozwolonym zakresie
+        in_range = (
+            source.thickness >= request.blocked_thickness_min and
+            source.thickness <= request.blocked_thickness_max
+        )
+
+        price = source.price_pln_per_kg if in_range else 0.0
+
+        new_price = GrindingPrice(
+            provider=GrindingProvider.COSTA,
+            thickness=source.thickness,
+            grit=source.grit,
+            width_variant=source.width_variant,
+            with_sb=source.with_sb,
+            price_pln_per_kg=price,
+            is_active=True,
+        )
+        db.add(new_price)
+        created += 1
+
+        if price > 0:
+            available += 1
+        else:
+            blocked += 1
+
+    db.commit()
+
+    return COSTAInitResponse(
+        created=created,
+        blocked=blocked,
+        available=available,
+    )
+
+
+# === Film Matrix Endpoints ===
+
+@router.get("/film-prices/matrix", response_model=FilmMatrixResponse)
+async def get_film_matrix(db: Session = Depends(get_db)):
+    """Pobierz pełną matrycę cen folii (grubość x typ folii)."""
+    prices = db.query(FilmPrice).filter(FilmPrice.is_active == True).all()
+
+    matrix = {}
+    thicknesses = set()
+    film_types = set()
+
+    for p in prices:
+        thicknesses.add(p.thickness)
+        film_types.add(p.film_type.value)
+
+        if p.thickness not in matrix:
+            matrix[p.thickness] = {}
+
+        matrix[p.thickness][p.film_type.value] = {
+            "id": p.id,
+            "price": p.price_pln_per_kg,
+            "film_type": p.film_type.value,
+        }
+
+    return FilmMatrixResponse(
+        matrix=matrix,
+        thicknesses=sorted(thicknesses),
+        film_types=sorted(film_types),
+    )
+
+
+@router.put("/film-prices/{price_id}")
+async def update_film_price(
+    price_id: int,
+    price: float = Query(..., description="Cena PLN/kg (>0=dostepny, 0=dziedzicz, <0=blokada)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aktualizuj pojedynczą cenę folii."""
+    film_price = db.query(FilmPrice).filter(FilmPrice.id == price_id).first()
+
+    if not film_price:
+        raise HTTPException(status_code=404, detail="Cena nie znaleziona")
+
+    film_price.price_pln_per_kg = price
+    db.commit()
+
+    return {
+        "id": film_price.id,
+        "price": film_price.price_pln_per_kg,
+        "film_type": film_price.film_type.value,
+    }
+
+
+@router.put("/film-prices/bulk")
+async def update_film_matrix_bulk(
+    request: FilmBulkUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Masowa aktualizacja matrycy cen folii."""
+    count = 0
+
+    for update in request.updates:
+        existing = db.query(FilmPrice).filter(
+            FilmPrice.thickness == update.thickness,
+            FilmPrice.film_type == update.film_type,
+        ).first()
+
+        if existing:
+            existing.price_pln_per_kg = update.price
+        else:
+            new_price = FilmPrice(
+                thickness=update.thickness,
+                film_type=update.film_type,
+                price_pln_per_kg=update.price,
+            )
+            db.add(new_price)
+        count += 1
+
+    db.commit()
+
+    return {"updated": count}
+
+
+@router.get("/film-prices/types")
+async def list_film_types():
+    """Lista wszystkich typów folii."""
+    return {
+        "film_types": [
+            {"value": f.value, "name": f.value}
+            for f in FilmType
+        ]
+    }
+
+
+# === Statistics ===
+
+@router.get("/stats/grinding")
+async def get_grinding_stats(db: Session = Depends(get_db)):
+    """Statystyki matryc szlifu."""
+    stats = {}
+
+    for provider in GrindingProvider:
+        total = db.query(GrindingPrice).filter(
+            GrindingPrice.provider == provider
+        ).count()
+
+        available = db.query(GrindingPrice).filter(
+            GrindingPrice.provider == provider,
+            GrindingPrice.price_pln_per_kg > 0,
+            GrindingPrice.is_active == True,
+        ).count()
+
+        blocked = db.query(GrindingPrice).filter(
+            GrindingPrice.provider == provider,
+            GrindingPrice.price_pln_per_kg == 0,
+        ).count()
+
+        stats[provider.value] = {
+            "total": total,
+            "available": available,
+            "blocked": blocked,
+        }
+
+    return stats
+
+
+# === Add Row/Column Endpoints ===
+
+@router.post("/grinding-prices/matrix/{provider}/add-row", response_model=AddMatrixResponse)
+async def add_grinding_row(
+    provider: GrindingProvider,
+    request: AddGrindingRowRequest,
+    width_variant: Optional[str] = Query(None, description="Wariant szerokosci dla BORYS"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Dodaj nowy wiersz (grubosc) do matrycy szlifu.
+
+    Tworzy wpisy dla wszystkich istniejacych granulacji z podana cena.
+    """
+    # Pobierz istniejace granulacje dla tego dostawcy
+    existing_grits = db.query(GrindingPrice.grit, GrindingPrice.with_sb).filter(
+        GrindingPrice.provider == provider,
+        GrindingPrice.is_active == True,
+    ).distinct().all()
+
+    if not existing_grits:
+        raise HTTPException(
+            status_code=400,
+            detail="Brak istniejacych granulacji dla tego dostawcy"
+        )
+
+    # Sprawdz czy grubosc juz istnieje
+    existing = db.query(GrindingPrice).filter(
+        GrindingPrice.provider == provider,
+        GrindingPrice.thickness == request.thickness,
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Grubosc {request.thickness} juz istnieje dla {provider.value}"
+        )
+
+    created = 0
+    for grit, with_sb in existing_grits:
+        new_price = GrindingPrice(
+            provider=provider,
+            thickness=request.thickness,
+            grit=grit,
+            with_sb=with_sb,
+            width_variant=width_variant,
+            price_pln_per_kg=request.default_price,
+            is_active=True,
+        )
+        db.add(new_price)
+        created += 1
+
+    db.commit()
+
+    return AddMatrixResponse(
+        success=True,
+        created=created,
+        message=f"Dodano grubosc {request.thickness}mm z {created} wpisami"
+    )
+
+
+@router.post("/grinding-prices/matrix/{provider}/add-column", response_model=AddMatrixResponse)
+async def add_grinding_column(
+    provider: GrindingProvider,
+    request: AddGrindingColumnRequest,
+    width_variant: Optional[str] = Query(None, description="Wariant szerokosci dla BORYS"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Dodaj nowa kolumne (granulacje) do matrycy szlifu.
+
+    Tworzy wpisy dla wszystkich istniejacych grubosci z podana cena.
+    """
+    # Pobierz istniejace grubosci dla tego dostawcy
+    existing_thicknesses = db.query(GrindingPrice.thickness).filter(
+        GrindingPrice.provider == provider,
+        GrindingPrice.is_active == True,
+    ).distinct().all()
+
+    if not existing_thicknesses:
+        raise HTTPException(
+            status_code=400,
+            detail="Brak istniejacych grubosci dla tego dostawcy"
+        )
+
+    # Sprawdz czy granulacja juz istnieje
+    existing = db.query(GrindingPrice).filter(
+        GrindingPrice.provider == provider,
+        GrindingPrice.grit == request.grit,
+        GrindingPrice.with_sb == request.with_sb,
+    ).first()
+
+    if existing:
+        suffix = " +SB" if request.with_sb else ""
+        raise HTTPException(
+            status_code=400,
+            detail=f"Granulacja {request.grit}{suffix} juz istnieje dla {provider.value}"
+        )
+
+    created = 0
+    for (thickness,) in existing_thicknesses:
+        new_price = GrindingPrice(
+            provider=provider,
+            thickness=thickness,
+            grit=request.grit,
+            with_sb=request.with_sb,
+            width_variant=width_variant,
+            price_pln_per_kg=request.default_price,
+            is_active=True,
+        )
+        db.add(new_price)
+        created += 1
+
+    db.commit()
+
+    suffix = " +SB" if request.with_sb else ""
+    return AddMatrixResponse(
+        success=True,
+        created=created,
+        message=f"Dodano granulacje {request.grit}{suffix} z {created} wpisami"
+    )
+
+
+@router.post("/film-prices/add-row", response_model=AddMatrixResponse)
+async def add_film_row(
+    request: AddFilmRowRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Dodaj nowy wiersz (grubosc) do matrycy folii.
+
+    Tworzy wpisy dla wszystkich typow folii z podana cena.
+    """
+    # Sprawdz czy grubosc juz istnieje
+    existing = db.query(FilmPrice).filter(
+        FilmPrice.thickness == request.thickness,
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Grubosc {request.thickness} juz istnieje"
+        )
+
+    created = 0
+    for film_type in FilmType:
+        new_price = FilmPrice(
+            film_type=film_type,
+            thickness=request.thickness,
+            price_pln_per_kg=request.default_price,
+            is_active=True,
+        )
+        db.add(new_price)
+        created += 1
+
+    db.commit()
+
+    return AddMatrixResponse(
+        success=True,
+        created=created,
+        message=f"Dodano grubosc {request.thickness}mm z {created} wpisami"
+    )
+
+
+# === Material Groups Management ===
+
+@router.get("/material-groups", response_model=list[MaterialGroupResponse])
+async def list_material_groups(
+    category: Optional[MaterialCategory] = Query(None, description="Filtruj po kategorii"),
+    include_inactive: bool = Query(False, description="Uwzględnij nieaktywne"),
+    db: Session = Depends(get_db),
+):
+    """Pobierz listę grup materiałów."""
+    query = db.query(MaterialGroup)
+
+    if category:
+        query = query.filter(MaterialGroup.category == category)
+
+    if not include_inactive:
+        query = query.filter(MaterialGroup.is_active == True)
+
+    return query.order_by(MaterialGroup.category, MaterialGroup.display_order).all()
+
+
+@router.get("/material-groups/{group_id}", response_model=MaterialGroupWithMaterials)
+async def get_material_group(
+    group_id: int,
+    db: Session = Depends(get_db),
+):
+    """Pobierz grupę materiałów ze szczegółami."""
+    group = db.query(MaterialGroup).options(
+        joinedload(MaterialGroup.materials)
+    ).filter(MaterialGroup.id == group_id).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupa nie znaleziona")
+
+    return group
+
+
+@router.post("/material-groups", response_model=MaterialGroupResponse, status_code=201)
+async def create_material_group(
+    data: MaterialGroupCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Utwórz nową grupę materiałów."""
+    existing = db.query(MaterialGroup).filter(MaterialGroup.name == data.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Grupa o tej nazwie już istnieje")
+
+    group = MaterialGroup(**data.model_dump())
+    db.add(group)
+    db.commit()
+    db.refresh(group)
+
+    return group
+
+
+@router.put("/material-groups/{group_id}", response_model=MaterialGroupResponse)
+async def update_material_group(
+    group_id: int,
+    data: MaterialGroupUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aktualizuj grupę materiałów."""
+    group = db.query(MaterialGroup).filter(MaterialGroup.id == group_id).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupa nie znaleziona")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(group, field, value)
+
+    db.commit()
+    db.refresh(group)
+
+    return group
+
+
+@router.delete("/material-groups/{group_id}", status_code=204)
+async def delete_material_group(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Usuń grupę materiałów (soft delete - ustawia is_active=False)."""
+    group = db.query(MaterialGroup).filter(MaterialGroup.id == group_id).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Grupa nie znaleziona")
+
+    # Soft delete - materiały zostają, ale tracą przypisanie
+    group.is_active = False
+    db.commit()
+
+
+# === Materials Management ===
+
+@router.get("/materials", response_model=list[MaterialWithGroup])
+async def list_materials_admin(
+    category: Optional[MaterialCategory] = Query(None, description="Filtruj po kategorii"),
+    group_id: Optional[int] = Query(None, description="Filtruj po grupie"),
+    include_inactive: bool = Query(False, description="Uwzględnij nieaktywne"),
+    db: Session = Depends(get_db),
+):
+    """Pobierz listę materiałów (widok admin)."""
+    query = db.query(Material).options(joinedload(Material.group))
+
+    if category:
+        query = query.filter(Material.category == category)
+
+    if group_id:
+        query = query.filter(Material.group_id == group_id)
+
+    if not include_inactive:
+        query = query.filter(Material.is_active == True)
+
+    return query.order_by(Material.category, Material.display_order, Material.grade).all()
+
+
+@router.get("/materials/stats")
+async def get_materials_stats(db: Session = Depends(get_db)):
+    """Statystyki materiałów i grup."""
+    stats = {
+        "total_groups": db.query(MaterialGroup).filter(MaterialGroup.is_active == True).count(),
+        "total_materials": db.query(Material).filter(Material.is_active == True).count(),
+        "by_category": {},
+    }
+
+    for category in MaterialCategory:
+        groups_count = db.query(MaterialGroup).filter(
+            MaterialGroup.category == category,
+            MaterialGroup.is_active == True,
+        ).count()
+
+        materials_count = db.query(Material).filter(
+            Material.category == category,
+            Material.is_active == True,
+        ).count()
+
+        stats["by_category"][category.value] = {
+            "groups": groups_count,
+            "materials": materials_count,
+        }
+
+    return stats
+
+
+@router.get("/materials/{material_id}", response_model=MaterialWithGroup)
+async def get_material_admin(
+    material_id: int,
+    db: Session = Depends(get_db),
+):
+    """Pobierz szczegóły materiału (widok admin)."""
+    material = db.query(Material).options(
+        joinedload(Material.group)
+    ).filter(Material.id == material_id).first()
+
+    if not material:
+        raise HTTPException(status_code=404, detail="Materiał nie znaleziony")
+
+    return material
+
+
+@router.post("/materials", response_model=MaterialResponse, status_code=201)
+async def create_material_admin(
+    data: MaterialCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Utwórz nowy materiał."""
+    existing = db.query(Material).filter(Material.name == data.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Materiał o tej nazwie już istnieje")
+
+    # Walidacja group_id
+    if data.group_id:
+        group = db.query(MaterialGroup).filter(MaterialGroup.id == data.group_id).first()
+        if not group:
+            raise HTTPException(status_code=400, detail="Podana grupa nie istnieje")
+
+    material = Material(**data.model_dump())
+    db.add(material)
+    db.commit()
+    db.refresh(material)
+
+    return material
+
+
+@router.put("/materials/{material_id}", response_model=MaterialResponse)
+async def update_material_admin(
+    material_id: int,
+    data: MaterialUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aktualizuj materiał."""
+    material = db.query(Material).filter(Material.id == material_id).first()
+
+    if not material:
+        raise HTTPException(status_code=404, detail="Materiał nie znaleziony")
+
+    # Walidacja group_id jeśli podano
+    if data.group_id is not None and data.group_id != 0:
+        group = db.query(MaterialGroup).filter(MaterialGroup.id == data.group_id).first()
+        if not group:
+            raise HTTPException(status_code=400, detail="Podana grupa nie istnieje")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(material, field, value)
+
+    db.commit()
+    db.refresh(material)
+
+    return material
+
+
+@router.delete("/materials/{material_id}", status_code=204)
+async def delete_material_admin(
+    material_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Usuń materiał (soft delete - ustawia is_active=False)."""
+    material = db.query(Material).filter(Material.id == material_id).first()
+
+    if not material:
+        raise HTTPException(status_code=404, detail="Materiał nie znaleziony")
+
+    material.is_active = False
+    db.commit()
+
+
+@router.get("/categories")
+async def list_categories():
+    """Lista wszystkich kategorii materiałów."""
+    return {
+        "categories": [
+            {"value": c.value, "name": c.name}
+            for c in MaterialCategory
+        ]
+    }
+
+
+# === Base Price Matrix Endpoints ===
+
+@router.get("/base-prices/dimensions")
+async def get_available_dimensions(
+    category: Optional[MaterialCategory] = Query(None, description="Filtruj po kategorii"),
+    db: Session = Depends(get_db),
+):
+    """Pobierz dostępne wymiary (grubość x szerokość) dla cen bazowych."""
+    query = db.query(
+        BasePrice.thickness,
+        BasePrice.width,
+    ).distinct()
+
+    if category:
+        query = query.join(Material).filter(Material.category == category)
+
+    dimensions = query.order_by(BasePrice.thickness, BasePrice.width).all()
+
+    thicknesses = sorted(set(d.thickness for d in dimensions))
+    widths = sorted(set(d.width for d in dimensions))
+
+    return {
+        "thicknesses": thicknesses,
+        "widths": widths,
+        "combinations": [{"thickness": d.thickness, "width": d.width} for d in dimensions],
+    }
+
+
+@router.get("/base-prices/surface-finishes")
+async def get_surface_finishes(
+    category: Optional[MaterialCategory] = Query(None, description="Filtruj po kategorii"),
+):
+    """Pobierz dostępne wykończenia powierzchni."""
+    finishes = []
+
+    if category == MaterialCategory.STAINLESS_STEEL or category is None:
+        finishes.extend([
+            SurfaceFinish.FINISH_2B,
+            SurfaceFinish.FINISH_BA,
+            SurfaceFinish.FINISH_1D,
+            SurfaceFinish.FINISH_LEN,
+            SurfaceFinish.FINISH_RYFEL,
+        ])
+
+    if category == MaterialCategory.CARBON_STEEL or category is None:
+        finishes.extend([
+            SurfaceFinish.FINISH_HR,
+            SurfaceFinish.FINISH_CR,
+            SurfaceFinish.FINISH_PICKLED,
+            SurfaceFinish.FINISH_OILED,
+        ])
+
+    if category == MaterialCategory.ALUMINUM or category is None:
+        finishes.extend([
+            SurfaceFinish.FINISH_MILL,
+            SurfaceFinish.FINISH_ANODIZED,
+        ])
+
+    return {
+        "surface_finishes": [{"value": f.value, "name": f.value} for f in finishes],
+    }
+
+
+@router.get("/base-prices/matrix", response_model=BasePriceMatrixResponse)
+async def get_base_price_matrix(
+    thickness: float = Query(..., gt=0, description="Grubość w mm"),
+    width: float = Query(..., gt=0, description="Szerokość w mm"),
+    category: Optional[MaterialCategory] = Query(None, description="Filtruj po kategorii"),
+    db: Session = Depends(get_db),
+):
+    """Pobierz matrycę cen bazowych dla wybranej grubości i szerokości.
+
+    Wiersze = materiały (gatunki), kolumny = wykończenia powierzchni.
+    """
+    # Pobierz materiały
+    materials_query = db.query(Material).options(
+        joinedload(Material.group)
+    ).filter(Material.is_active == True)
+
+    if category:
+        materials_query = materials_query.filter(Material.category == category)
+
+    materials = materials_query.order_by(
+        Material.category, Material.display_order, Material.grade
+    ).all()
+
+    # Pobierz ceny dla tej grubości/szerokości
+    prices_query = db.query(BasePrice).filter(
+        BasePrice.thickness == thickness,
+        BasePrice.width == width,
+        BasePrice.is_active == True,
+    )
+
+    if category:
+        prices_query = prices_query.join(Material).filter(Material.category == category)
+
+    prices = prices_query.all()
+
+    # Buduj mapę cen: material_id -> surface_finish -> price
+    price_map = {}
+    surface_finishes_set = set()
+
+    for p in prices:
+        if p.material_id not in price_map:
+            price_map[p.material_id] = {}
+        price_map[p.material_id][p.surface_finish] = p
+        surface_finishes_set.add(p.surface_finish)
+
+    # Określ dostępne wykończenia dla kategorii
+    if category == MaterialCategory.STAINLESS_STEEL:
+        surface_finishes = ["2B", "BA", "1D", "LEN", "RYFEL ASTM"]
+    elif category == MaterialCategory.CARBON_STEEL:
+        surface_finishes = ["HR", "CR", "trawiona", "naoliwiona"]
+    elif category == MaterialCategory.ALUMINUM:
+        surface_finishes = ["mill", "anodowana"]
+    else:
+        # Bez filtra kategorii - określ wykończenia na podstawie kategorii materiałów
+        categories_present = set(mat.category for mat in materials)
+        surface_finishes = []
+        if MaterialCategory.STAINLESS_STEEL in categories_present:
+            surface_finishes.extend(["2B", "BA", "1D", "LEN", "RYFEL ASTM"])
+        if MaterialCategory.CARBON_STEEL in categories_present:
+            surface_finishes.extend(["HR", "CR", "trawiona", "naoliwiona"])
+        if MaterialCategory.ALUMINUM in categories_present:
+            surface_finishes.extend(["mill", "anodowana"])
+        if not surface_finishes:
+            surface_finishes = sorted(surface_finishes_set)
+
+    # Buduj wiersze materiałów
+    material_rows = []
+    for mat in materials:
+        prices_dict = {}
+        for sf in surface_finishes:
+            if mat.id in price_map and sf in price_map[mat.id]:
+                p = price_map[mat.id][sf]
+                prices_dict[sf] = BasePriceCell(
+                    id=p.id,
+                    price=p.price_pln_per_kg,
+                    surface_finish=sf,
+                    material_id=mat.id,
+                    thickness=thickness,
+                    width=width,
+                )
+            else:
+                prices_dict[sf] = BasePriceCell(
+                    id=None,
+                    price=0.0,
+                    surface_finish=sf,
+                    material_id=mat.id,
+                    thickness=thickness,
+                    width=width,
+                )
+
+        material_rows.append(BasePriceMaterialRow(
+            material_id=mat.id,
+            grade=mat.grade,
+            name=mat.name,
+            category=mat.category.value,
+            group_name=mat.group.name if mat.group else None,
+            prices=prices_dict,
+        ))
+
+    return BasePriceMatrixResponse(
+        thickness=thickness,
+        width=width,
+        surface_finishes=surface_finishes,
+        materials=material_rows,
+    )
+
+
+@router.put("/base-prices/{price_id}")
+async def update_base_price(
+    price_id: int,
+    price: float = Query(..., ge=0, description="Cena PLN/kg"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aktualizuj pojedynczą cenę bazową."""
+    base_price = db.query(BasePrice).filter(BasePrice.id == price_id).first()
+
+    if not base_price:
+        raise HTTPException(status_code=404, detail="Cena nie znaleziona")
+
+    base_price.price_pln_per_kg = price
+    db.commit()
+
+    return {
+        "id": base_price.id,
+        "price": base_price.price_pln_per_kg,
+        "material_id": base_price.material_id,
+        "surface_finish": base_price.surface_finish,
+    }
+
+
+@router.post("/base-prices", status_code=201)
+async def create_base_price(
+    data: BasePriceUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Utwórz nową cenę bazową."""
+    # Sprawdź czy materiał istnieje
+    material = db.query(Material).filter(Material.id == data.material_id).first()
+    if not material:
+        raise HTTPException(status_code=400, detail="Materiał nie istnieje")
+
+    # Sprawdź czy cena już istnieje
+    existing = db.query(BasePrice).filter(
+        BasePrice.material_id == data.material_id,
+        BasePrice.surface_finish == data.surface_finish,
+        BasePrice.thickness == data.thickness,
+        BasePrice.width == data.width,
+    ).first()
+
+    if existing:
+        # Aktualizuj istniejącą
+        existing.price_pln_per_kg = data.price
+        db.commit()
+        return {
+            "id": existing.id,
+            "price": existing.price_pln_per_kg,
+            "created": False,
+        }
+
+    # Utwórz nową
+    base_price = BasePrice(
+        material_id=data.material_id,
+        surface_finish=data.surface_finish,
+        thickness=data.thickness,
+        width=data.width,
+        length=data.width * 2,  # Domyślna długość
+        price_pln_per_kg=data.price,
+    )
+    db.add(base_price)
+    db.commit()
+    db.refresh(base_price)
+
+    return {
+        "id": base_price.id,
+        "price": base_price.price_pln_per_kg,
+        "created": True,
+    }
+
+
+@router.put("/base-prices/bulk", response_model=BasePriceBulkUpdateResponse)
+async def update_base_prices_bulk(
+    request: BasePriceBulkUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Masowa aktualizacja/tworzenie cen bazowych."""
+    updated = 0
+    created = 0
+
+    for update in request.updates:
+        existing = db.query(BasePrice).filter(
+            BasePrice.material_id == update.material_id,
+            BasePrice.surface_finish == update.surface_finish,
+            BasePrice.thickness == update.thickness,
+            BasePrice.width == update.width,
+        ).first()
+
+        if existing:
+            existing.price_pln_per_kg = update.price
+            updated += 1
+        else:
+            base_price = BasePrice(
+                material_id=update.material_id,
+                surface_finish=update.surface_finish,
+                thickness=update.thickness,
+                width=update.width,
+                length=update.width * 2,
+                price_pln_per_kg=update.price,
+            )
+            db.add(base_price)
+            created += 1
+
+    db.commit()
+
+    return BasePriceBulkUpdateResponse(updated=updated, created=created)
+
+
+@router.get("/base-prices/stats")
+async def get_base_prices_stats(
+    category: Optional[MaterialCategory] = Query(None, description="Filtruj po kategorii"),
+    db: Session = Depends(get_db),
+):
+    """Statystyki cen bazowych."""
+    query = db.query(BasePrice).filter(BasePrice.is_active == True)
+
+    if category:
+        query = query.join(Material).filter(Material.category == category)
+
+    total = query.count()
+    with_price = query.filter(BasePrice.price_pln_per_kg > 0).count()
+
+    # Statystyki per kategoria
+    by_category = {}
+    for cat in MaterialCategory:
+        cat_query = db.query(BasePrice).join(Material).filter(
+            Material.category == cat,
+            BasePrice.is_active == True,
+        )
+        cat_total = cat_query.count()
+        cat_with_price = cat_query.filter(BasePrice.price_pln_per_kg > 0).count()
+
+        by_category[cat.value] = {
+            "total": cat_total,
+            "with_price": cat_with_price,
+            "without_price": cat_total - cat_with_price,
+        }
+
+    return {
+        "total": total,
+        "with_price": with_price,
+        "without_price": total - with_price,
+        "by_category": by_category,
+    }

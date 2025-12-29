@@ -1,138 +1,436 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="bg-white shadow rounded-lg p-6">
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Cennik materiałów</h1>
-        <p class="text-gray-600">
-            Stal nierdzewna, stal czarna, aluminium - przetwarzanie ze zwojów CTL i multiblanking.
-        </p>
+<!-- Hero Section -->
+<section class="relative overflow-hidden">
+    <!-- Background decoration -->
+    <div class="absolute inset-0 -z-10">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white shadow rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Filtry</h2>
-
-        <form hx-get="/api/prices" hx-target="#price-table" hx-swap="innerHTML"
-              class="grid grid-cols-1 md:grid-cols-4 gap-4">
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Kategoria
-                </label>
-                <select name="category"
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Wszystkie</option>
-                    <option value="stal_nierdzewna">Stal nierdzewna</option>
-                    <option value="stal_czarna">Stal czarna</option>
-                    <option value="aluminium">Aluminium</option>
-                </select>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+        <div class="text-center max-w-4xl mx-auto">
+            <!-- Badge -->
+            <div class="inline-flex items-center px-4 py-1.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm font-medium mb-8">
+                <span class="w-2 h-2 rounded-full bg-primary-500 mr-2 animate-pulse"></span>
+                Nowa wersja 2025
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Źródło
-                </label>
-                <select name="source_type"
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Wszystkie</option>
-                    <option value="CTL">CTL (Cut To Length)</option>
-                    <option value="multiblanking">Multiblanking</option>
-                    <option value="arkusz">Arkusz</option>
-                </select>
+            <!-- Headline -->
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+                Profesjonalny cennik
+                <span class="gradient-text">blach stalowych</span>
+            </h1>
+
+            <!-- Subheadline -->
+            <p class="text-lg sm:text-xl text-steel-600 dark:text-steel-400 mb-10 max-w-2xl mx-auto">
+                Kompleksowy system cennikowy dla stali nierdzewnej, stali czarnej i aluminium.
+                Oblicz koszty materiałów z uwzględnieniem grubości, powierzchni i obróbki.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/cennik" class="inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-white gradient-bg hover:opacity-90 transition-opacity shadow-lg shadow-primary-500/25 text-lg">
+                    Sprawdź cennik
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                    </svg>
+                </a>
+                <a href="/docs" class="inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-steel-700 dark:text-steel-300 bg-white dark:bg-steel-800 hover:bg-steel-50 dark:hover:bg-steel-700 border border-steel-200 dark:border-steel-700 transition-colors text-lg">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                    </svg>
+                    Dokumentacja API
+                </a>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Grubość (mm)
-                </label>
-                <input type="number" name="thickness" step="0.1" placeholder="np. 1.5"
-                       class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-steel-200 dark:border-steel-800">
+                <div>
+                    <div class="text-3xl sm:text-4xl font-bold gradient-text">50+</div>
+                    <div class="text-steel-600 dark:text-steel-400 mt-1">Gatunków stali</div>
+                </div>
+                <div>
+                    <div class="text-3xl sm:text-4xl font-bold gradient-text">100%</div>
+                    <div class="text-steel-600 dark:text-steel-400 mt-1">Dokładność cen</div>
+                </div>
+                <div>
+                    <div class="text-3xl sm:text-4xl font-bold gradient-text">API</div>
+                    <div class="text-steel-600 dark:text-steel-400 mt-1">Integracja</div>
+                </div>
             </div>
-
-            <div class="flex items-end">
-                <button type="submit"
-                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
-                    Szukaj
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- Price Table -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Tabela cennikowa</h2>
-        </div>
-
-        <div id="price-table" class="overflow-x-auto">
-            <!-- Table content loaded via HTMX or initial render -->
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Materiał
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Gatunek
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Grubość
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Powierzchnia
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Źródło
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Cena PLN/kg
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Cena PLN/m²
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                            Brak danych. Zaimportuj cennik z pliku Excel.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
     </div>
+</section>
 
-    <!-- Import Section -->
-    <div class="bg-white shadow rounded-lg p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Import danych</h2>
+<!-- Materials Section -->
+<section class="py-20 bg-white dark:bg-steel-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4">
+                Obsługiwane <span class="gradient-text">materiały</span>
+            </h2>
+            <p class="text-steel-600 dark:text-steel-400 max-w-2xl mx-auto">
+                Pełna gama blach stalowych i aluminiowych z różnymi gatunkami i wykończeniami powierzchni.
+            </p>
+        </div>
 
-        <form hx-post="/api/import/excel" hx-encoding="multipart/form-data"
-              hx-target="#import-result" hx-swap="innerHTML"
-              class="space-y-4">
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Plik Excel (.xlsx, .xls)
-                </label>
-                <input type="file" name="file" accept=".xlsx,.xls"
-                       class="block w-full text-sm text-gray-500
-                              file:mr-4 file:py-2 file:px-4
-                              file:rounded-md file:border-0
-                              file:text-sm file:font-semibold
-                              file:bg-blue-50 file:text-blue-700
-                              hover:file:bg-blue-100">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Stainless Steel -->
+            <div class="card-hover bg-steel-50 dark:bg-steel-800 rounded-2xl p-8 border border-steel-200 dark:border-steel-700">
+                <div class="w-14 h-14 rounded-xl gradient-bg flex items-center justify-center mb-6">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Stal nierdzewna</h3>
+                <p class="text-steel-600 dark:text-steel-400 mb-4">
+                    Gatunki: 304, 304L, 316, 316L, 430, 201 i inne.
+                </p>
+                <ul class="space-y-2 text-sm text-steel-600 dark:text-steel-400">
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-primary-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Powierzchnie: 2B, BA, No.4, HL
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-primary-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Grubości: 0.4 - 8.0 mm
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-primary-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Folia ochronna opcjonalnie
+                    </li>
+                </ul>
             </div>
 
-            <button type="submit"
-                    class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
-                Importuj
-            </button>
-        </form>
+            <!-- Carbon Steel -->
+            <div class="card-hover bg-steel-50 dark:bg-steel-800 rounded-2xl p-8 border border-steel-200 dark:border-steel-700">
+                <div class="w-14 h-14 rounded-xl bg-orange-500 flex items-center justify-center mb-6">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Stal czarna</h3>
+                <p class="text-steel-600 dark:text-steel-400 mb-4">
+                    Gatunki: DC01, DC03, DC04, S235, S355 i inne.
+                </p>
+                <ul class="space-y-2 text-sm text-steel-600 dark:text-steel-400">
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Blachy zimnowalcowane
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Blachy gorącowalcowane
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Grubości: 0.5 - 20.0 mm
+                    </li>
+                </ul>
+            </div>
 
-        <div id="import-result" class="mt-4"></div>
+            <!-- Aluminum -->
+            <div class="card-hover bg-steel-50 dark:bg-steel-800 rounded-2xl p-8 border border-steel-200 dark:border-steel-700">
+                <div class="w-14 h-14 rounded-xl bg-cyan-500 flex items-center justify-center mb-6">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Aluminium</h3>
+                <p class="text-steel-600 dark:text-steel-400 mb-4">
+                    Gatunki: 1050, 5754, 5083, 6061, 6082 i inne.
+                </p>
+                <ul class="space-y-2 text-sm text-steel-600 dark:text-steel-400">
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-cyan-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Stopy Al-Mg, Al-Si
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-cyan-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Anodowane i surowe
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-cyan-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Grubości: 0.5 - 10.0 mm
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
-</div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4">
+                Wszystko czego <span class="gradient-text">potrzebujesz</span>
+            </h2>
+            <p class="text-steel-600 dark:text-steel-400 max-w-2xl mx-auto">
+                Kompletny zestaw narzędzi do zarządzania cennikiem materiałów stalowych.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="card-hover bg-white dark:bg-steel-800 rounded-2xl p-6 border border-steel-200 dark:border-steel-700">
+                <div class="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Kalkulator cen</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm">
+                    Oblicz cenę za kg lub m² z uwzględnieniem wszystkich parametrów materiału.
+                </p>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="card-hover bg-white dark:bg-steel-800 rounded-2xl p-6 border border-steel-200 dark:border-steel-700">
+                <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Import Excel</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm">
+                    Importuj cenniki z plików Excel. Automatyczne mapowanie kolumn i walidacja danych.
+                </p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="card-hover bg-white dark:bg-steel-800 rounded-2xl p-6 border border-steel-200 dark:border-steel-700">
+                <div class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">REST API</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm">
+                    Pełne API REST z dokumentacją Swagger. Integracja z dowolnym systemem.
+                </p>
+            </div>
+
+            <!-- Feature 4 -->
+            <div class="card-hover bg-white dark:bg-steel-800 rounded-2xl p-6 border border-steel-200 dark:border-steel-700">
+                <div class="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Filtry zaawansowane</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm">
+                    Filtruj po kategorii, gatunku, grubości, powierzchni i źródle materiału.
+                </p>
+            </div>
+
+            <!-- Feature 5 -->
+            <div class="card-hover bg-white dark:bg-steel-800 rounded-2xl p-6 border border-steel-200 dark:border-steel-700">
+                <div class="w-12 h-12 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Źródła materiału</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm">
+                    CTL (Cut To Length), multiblanking, arkusze standardowe - różne źródła i ceny.
+                </p>
+            </div>
+
+            <!-- Feature 6 -->
+            <div class="card-hover bg-white dark:bg-steel-800 rounded-2xl p-6 border border-steel-200 dark:border-steel-700">
+                <div class="w-12 h-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Dopłaty i obróbka</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm">
+                    Szlifowanie, polerowanie, folia ochronna - wszystkie opcje obróbki w cenie.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Section -->
+<section id="pricing" class="py-20 bg-white dark:bg-steel-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4">
+                Prosty <span class="gradient-text">cennik</span>
+            </h2>
+            <p class="text-steel-600 dark:text-steel-400 max-w-2xl mx-auto">
+                Wybierz plan dopasowany do Twoich potrzeb. Wszystkie plany zawierają dostęp do API.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <!-- Free Plan -->
+            <div class="card-hover bg-steel-50 dark:bg-steel-800 rounded-2xl p-8 border border-steel-200 dark:border-steel-700">
+                <h3 class="text-lg font-semibold mb-2">Starter</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm mb-6">Dla małych firm</p>
+                <div class="mb-6">
+                    <span class="text-4xl font-bold">0 zł</span>
+                    <span class="text-steel-600 dark:text-steel-400">/mies.</span>
+                </div>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        100 zapytań API / dzień
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Podstawowe materiały
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Kalkulator online
+                    </li>
+                </ul>
+                <a href="/cennik" class="block w-full py-3 text-center rounded-xl font-medium border border-steel-300 dark:border-steel-600 text-steel-700 dark:text-steel-300 hover:bg-steel-100 dark:hover:bg-steel-700 transition-colors">
+                    Rozpocznij za darmo
+                </a>
+            </div>
+
+            <!-- Pro Plan -->
+            <div class="card-hover bg-white dark:bg-steel-800 rounded-2xl p-8 border-2 border-primary-500 relative">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 gradient-bg text-white text-xs font-semibold rounded-full">
+                    Popularny
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Professional</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm mb-6">Dla średnich firm</p>
+                <div class="mb-6">
+                    <span class="text-4xl font-bold">199 zł</span>
+                    <span class="text-steel-600 dark:text-steel-400">/mies.</span>
+                </div>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        10,000 zapytań API / dzień
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Wszystkie materiały
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Import Excel
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Wsparcie email
+                    </li>
+                </ul>
+                <a href="/cennik" class="block w-full py-3 text-center rounded-xl font-medium text-white gradient-bg hover:opacity-90 transition-opacity">
+                    Wybierz plan
+                </a>
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="card-hover bg-steel-50 dark:bg-steel-800 rounded-2xl p-8 border border-steel-200 dark:border-steel-700">
+                <h3 class="text-lg font-semibold mb-2">Enterprise</h3>
+                <p class="text-steel-600 dark:text-steel-400 text-sm mb-6">Dla dużych organizacji</p>
+                <div class="mb-6">
+                    <span class="text-4xl font-bold">Kontakt</span>
+                </div>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Nielimitowane API
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Dedykowana instancja
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        SLA 99.9%
+                    </li>
+                    <li class="flex items-center text-sm">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Wsparcie 24/7
+                    </li>
+                </ul>
+                <a href="mailto:kontakt@cennikstali.pl" class="block w-full py-3 text-center rounded-xl font-medium border border-steel-300 dark:border-steel-600 text-steel-700 dark:text-steel-300 hover:bg-steel-100 dark:hover:bg-steel-700 transition-colors">
+                    Skontaktuj się
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="relative overflow-hidden rounded-3xl gradient-bg p-12 text-center">
+            <!-- Background pattern -->
+            <div class="absolute inset-0 opacity-10">
+                <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                        <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/>
+                    </pattern>
+                    <rect width="100" height="100" fill="url(#grid)"/>
+                </svg>
+            </div>
+
+            <div class="relative">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">
+                    Gotowy do rozpoczęcia?
+                </h2>
+                <p class="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
+                    Sprawdź cennik materiałów już teraz. Bez rejestracji, bez zobowiązań.
+                </p>
+                <a href="/cennik" class="inline-flex items-center px-8 py-4 rounded-xl font-semibold text-primary-600 bg-white hover:bg-steel-100 transition-colors text-lg shadow-lg">
+                    Otwórz kalkulator
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
 {% endblock %}

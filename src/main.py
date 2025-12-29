@@ -2,14 +2,16 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .config import get_settings
 from .database import init_db
-from .routers import materials_router, prices_router, import_export_router
+from .routers import materials_router, prices_router, import_export_router, admin_router, auth_router
+from .auth import require_admin
+from .models import User
 
 settings = get_settings()
 
@@ -41,6 +43,8 @@ templates = Jinja2Templates(directory="src/templates")
 app.include_router(materials_router)
 app.include_router(prices_router)
 app.include_router(import_export_router)
+app.include_router(admin_router)
+app.include_router(auth_router)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -51,6 +55,83 @@ async def home(request: Request):
         {
             "request": request,
             "title": settings.app_name,
+        },
+    )
+
+
+@app.get("/cennik", response_class=HTMLResponse)
+async def calculator(request: Request):
+    """Strona kalkulatora cennika."""
+    return templates.TemplateResponse(
+        "calculator.html",
+        {
+            "request": request,
+            "title": settings.app_name,
+        },
+    )
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel(request: Request, user: User = Depends(require_admin)):
+    """Panel administracyjny - matryce cen."""
+    return templates.TemplateResponse(
+        "admin/index.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Admin",
+            "user": user,
+        },
+    )
+
+
+@app.get("/admin/grinding", response_class=HTMLResponse)
+async def admin_grinding(request: Request, user: User = Depends(require_admin)):
+    """Panel administracyjny - matryce szlifu."""
+    return templates.TemplateResponse(
+        "admin/grinding_matrix.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Matryce Szlifu",
+            "user": user,
+        },
+    )
+
+
+@app.get("/admin/film", response_class=HTMLResponse)
+async def admin_film(request: Request, user: User = Depends(require_admin)):
+    """Panel administracyjny - matryce folii."""
+    return templates.TemplateResponse(
+        "admin/film_matrix.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Matryce Folii",
+            "user": user,
+        },
+    )
+
+
+@app.get("/admin/materials", response_class=HTMLResponse)
+async def admin_materials(request: Request, user: User = Depends(require_admin)):
+    """Panel administracyjny - materialy i gatunki stali."""
+    return templates.TemplateResponse(
+        "admin/materials.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Materialy",
+            "user": user,
+        },
+    )
+
+
+@app.get("/admin/pricing", response_class=HTMLResponse)
+async def admin_pricing(request: Request, user: User = Depends(require_admin)):
+    """Panel administracyjny - matryce cen bazowych dla gatunkow."""
+    return templates.TemplateResponse(
+        "admin/pricing.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Ceny Gatunkow",
+            "user": user,
         },
     )
 
