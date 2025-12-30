@@ -17,6 +17,7 @@ from .price import (
     ThicknessModifier,
     WidthModifier,
     ExchangeRate,
+    PriceChangeAudit,
 )
 
 from .processing import (
@@ -50,6 +51,7 @@ __all__ = [
     "ThicknessModifier",
     "WidthModifier",
     "ExchangeRate",
+    "PriceChangeAudit",
     # Processing
     "GrindingProvider",
     "GrindingGrit",

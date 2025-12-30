@@ -19,7 +19,7 @@ from ..models import (
 )
 from ..models.price import BasePrice
 from ..auth.dependencies import get_current_user
-from ..services import GrindingValidationService
+from ..services import GrindingValidationService, BulkPricingService
 from ..schemas.admin import (
     GrindingMatrixResponse,
     GrindingPriceUpdate,
@@ -43,6 +43,11 @@ from ..schemas.admin import (
     BasePriceUpdate,
     BasePriceBulkUpdateRequest,
     BasePriceBulkUpdateResponse,
+    BulkPriceFilterRequest,
+    BulkPricePreviewResponse,
+    BulkPriceChangeRequest,
+    BulkPriceChangeResponse,
+    BulkFilterOptionsResponse,
 )
 from ..schemas.pricing import (
     MaterialGroupCreate,
@@ -1112,3 +1117,110 @@ async def get_base_prices_stats(
         "without_price": total - with_price,
         "by_category": by_category,
     }
+
+
+# === Bulk Price Change Endpoints ===
+
+@router.get("/base-prices/filter-options", response_model=BulkFilterOptionsResponse)
+async def get_bulk_filter_options(
+    category: Optional[str] = Query(None, description="Filtruj opcje po kategorii (deprecated)"),
+    categories: Optional[str] = Query(None, description="Kategorie oddzielone przecinkiem"),
+    group_ids: Optional[str] = Query(None, description="ID grup oddzielone przecinkiem"),
+    grades: Optional[str] = Query(None, description="Gatunki oddzielone przecinkiem"),
+    surface_finishes: Optional[str] = Query(None, description="Wykończenia oddzielone przecinkiem"),
+    widths: Optional[str] = Query(None, description="Szerokości oddzielone przecinkiem"),
+    db: Session = Depends(get_db),
+):
+    """Pobierz dostępne opcje filtrów - dwukierunkowe filtrowanie."""
+    # Parse categories
+    categories_list = None
+    if categories:
+        categories_list = [c.strip() for c in categories.split(",") if c.strip()]
+    elif category:
+        categories_list = [category]
+
+    # Parse group_ids
+    group_ids_list = None
+    if group_ids:
+        group_ids_list = [int(g.strip()) for g in group_ids.split(",") if g.strip()]
+
+    # Parse grades
+    grades_list = None
+    if grades:
+        grades_list = [g.strip() for g in grades.split(",") if g.strip()]
+
+    # Parse surface_finishes
+    surface_finishes_list = None
+    if surface_finishes:
+        surface_finishes_list = [s.strip() for s in surface_finishes.split(",") if s.strip()]
+
+    # Parse widths
+    widths_list = None
+    if widths:
+        widths_list = [float(w.strip()) for w in widths.split(",") if w.strip()]
+
+    service = BulkPricingService(db)
+    return service.get_filter_options(
+        categories_list, group_ids_list, grades_list, surface_finishes_list, widths_list
+    )
+
+
+@router.post("/base-prices/bulk-change/preview", response_model=BulkPricePreviewResponse)
+async def preview_bulk_price_change(
+    request: BulkPriceChangeRequest,
+    page: int = Query(1, ge=1, description="Numer strony"),
+    per_page: int = Query(50, ge=10, le=200, description="Elementów na stronę"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Podgląd zbiorczej zmiany cen bez zapisywania.
+
+    Zwraca listę cen, które zostaną zmienione wraz z nowymi wartościami.
+    """
+    service = BulkPricingService(db)
+    return service.preview_changes(
+        filters=request.filters,
+        change_type=request.change_type,
+        change_value=request.change_value,
+        page=page,
+        per_page=per_page,
+        round_to=request.round_to,
+    )
+
+
+@router.post("/base-prices/bulk-change/apply", response_model=BulkPriceChangeResponse)
+async def apply_bulk_price_change(
+    request: BulkPriceChangeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Zastosuj zbiorczą zmianę cen.
+
+    Zmienia ceny dla wszystkich pozycji pasujących do filtrów.
+    Tworzy wpis w historii zmian (audit log).
+    """
+    service = BulkPricingService(db)
+    return service.apply_changes(
+        filters=request.filters,
+        change_type=request.change_type,
+        change_value=request.change_value,
+        user=current_user,
+        round_to=request.round_to,
+    )
+
+
+@router.get("/base-prices/audit-history")
+async def get_price_audit_history(
+    limit: int = Query(50, ge=1, le=200, description="Limit wyników"),
+    offset: int = Query(0, ge=0, description="Offset dla paginacji"),
+    change_type: Optional[str] = Query(None, description="Filtruj po typie zmiany"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Pobierz historię zmian cen."""
+    service = BulkPricingService(db)
+    return service.get_audit_history(
+        limit=limit,
+        offset=offset,
+        change_type=change_type,
+    )

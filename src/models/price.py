@@ -5,7 +5,7 @@ from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import (
     String, Float, Integer, ForeignKey, DateTime, Boolean,
-    UniqueConstraint
+    UniqueConstraint, Text
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,6 +13,7 @@ from ..database import Base
 
 if TYPE_CHECKING:
     from .material import Material, SurfaceFinish
+    from .user import User
 
 
 class BasePrice(Base):
@@ -134,3 +135,38 @@ class ExchangeRate(Base):
 
     def __repr__(self) -> str:
         return f"<ExchangeRate {self.currency_from}/{self.currency_to} = {self.rate}>"
+
+
+class PriceChangeAudit(Base):
+    """Historia zmian cen - audyt operacji zbiorczych."""
+
+    __tablename__ = "price_change_audits"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    # Typ zmiany: bulk_percentage, bulk_absolute
+    change_type: Mapped[str] = mapped_column(String(50), index=True)
+
+    # Filtry użyte do zmiany (JSON)
+    filters_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Wartość zmiany (% lub PLN/kg)
+    change_value: Mapped[float] = mapped_column(Float)
+
+    # Statystyki
+    affected_count: Mapped[int] = mapped_column(Integer, default=0)
+    previous_total: Mapped[float] = mapped_column(Float, default=0)
+    new_total: Mapped[float] = mapped_column(Float, default=0)
+
+    # Użytkownik
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    user: Mapped["User"] = relationship()
+
+    # Timestamp
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Notatki
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<PriceChangeAudit {self.change_type} {self.change_value} ({self.affected_count} items)>"

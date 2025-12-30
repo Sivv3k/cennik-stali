@@ -250,3 +250,78 @@ class BasePriceBulkUpdateResponse(BaseModel):
 
     updated: int
     created: int
+
+
+# === Bulk Price Change Schemas ===
+
+class BulkPriceFilterRequest(BaseModel):
+    """Filtry dla operacji zbiorczych zmian cen."""
+
+    categories: Optional[list[str]] = Field(None, description="Lista kategorii (przyciski multi-select)")
+    group_ids: Optional[list[int]] = Field(None, description="Lista ID grup materiałów (multi-select)")
+    grades: Optional[list[str]] = Field(None, description="Lista gatunków (multi-select)")
+    surface_finishes: Optional[list[str]] = Field(None, description="Lista wykończeń (przyciski multi-select)")
+    thickness_min: Optional[float] = Field(None, ge=0, description="Minimalna grubość mm")
+    thickness_max: Optional[float] = Field(None, ge=0, description="Maksymalna grubość mm")
+    widths: Optional[list[float]] = Field(None, description="Lista szerokości mm (przyciski multi-select)")
+
+
+class BulkPricePreviewItem(BaseModel):
+    """Pojedyncza pozycja w podglądzie zmian."""
+
+    id: int
+    material_grade: str
+    material_name: str
+    group_name: Optional[str] = None
+    surface_finish: str
+    thickness: float
+    width: float
+    current_price: float
+    new_price: float
+    change_amount: float
+
+
+class BulkPricePreviewResponse(BaseModel):
+    """Odpowiedź z podglądem zmian zbiorczych."""
+
+    total_affected: int
+    total_current_value: float
+    total_new_value: float
+    change_type: str
+    change_value: float
+    items: list[BulkPricePreviewItem]
+    page: int = 1
+    per_page: int = 50
+    total_pages: int = 1
+
+
+class BulkPriceChangeRequest(BaseModel):
+    """Request do zbiorczej zmiany cen."""
+
+    filters: BulkPriceFilterRequest
+    change_type: str = Field(description="Typ zmiany: 'percentage' lub 'absolute'")
+    change_value: float = Field(description="Wartość zmiany: % lub PLN/kg")
+    round_to: int = Field(default=2, ge=0, le=4, description="Zaokrąglenie do N miejsc po przecinku")
+
+
+class BulkPriceChangeResponse(BaseModel):
+    """Odpowiedź po zastosowaniu zmian zbiorczych."""
+
+    success: bool
+    updated_count: int
+    skipped_count: int = 0
+    total_previous: float
+    total_new: float
+    change_type: str
+    change_value: float
+
+
+class BulkFilterOptionsResponse(BaseModel):
+    """Odpowiedź z dostępnymi opcjami filtrów."""
+
+    categories: list[dict]
+    groups: list[dict]
+    grades: list[str]
+    surface_finishes: list[str]
+    thickness_range: dict
+    widths: list[float]  # Lista dostępnych szerokości (przyciski)

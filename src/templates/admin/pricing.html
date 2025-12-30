@@ -133,6 +133,15 @@
                 Edytuj ceny bazowe PLN/kg dla gatunkow stali i aluminium.
             </p>
         </div>
+        <div>
+            <button onclick="openBulkChangeModal()"
+                    class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                </svg>
+                Zbiorcza zmiana cen
+            </button>
+        </div>
     </div>
 
     <!-- Category Tabs -->
@@ -280,6 +289,194 @@
                data-price-id="">
     </td>
 </template>
+
+<!-- Bulk Change Modal -->
+<div id="bulk-change-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="closeBulkChangeModal()"></div>
+    <div class="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[1500px] md:max-h-[90vh] bg-white dark:bg-steel-900 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-steel-200 dark:border-steel-700 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-steel-900 dark:text-white">Zbiorcza zmiana cen</h2>
+            <button onclick="closeBulkChangeModal()" class="p-2 hover:bg-steel-100 dark:hover:bg-steel-800 rounded-lg">
+                <svg class="w-5 h-5 text-steel-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Body - pełna wysokość -->
+        <div class="flex-1 overflow-hidden p-6 flex flex-col">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
+                <!-- Left: Filters - przewijalna kolumna -->
+                <div class="space-y-4 overflow-y-auto">
+                    <h3 class="font-semibold text-steel-800 dark:text-steel-200">Filtry</h3>
+
+                    <!-- Category Buttons -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Kategoria</label>
+                        <div id="bulk-category-buttons" class="flex flex-wrap gap-2">
+                            <button type="button" data-category="stal_nierdzewna" data-selected="false" onclick="toggleCategoryButton(this)"
+                                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 hover:bg-steel-200 dark:hover:bg-steel-600 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                                INOX
+                            </button>
+                            <button type="button" data-category="stal_czarna" data-selected="false" onclick="toggleCategoryButton(this)"
+                                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 hover:bg-steel-200 dark:hover:bg-steel-600 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-gray-600"></span>
+                                MILD
+                            </button>
+                            <button type="button" data-category="aluminium" data-selected="false" onclick="toggleCategoryButton(this)"
+                                    class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 hover:bg-steel-200 dark:hover:bg-steel-600 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                                ALU
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Groups Multi-Select -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Grupy materialow</label>
+                        <div id="bulk-groups-list" class="max-h-32 overflow-y-auto border border-steel-300 dark:border-steel-600 rounded-lg bg-white dark:bg-steel-800 p-2 space-y-1">
+                            <div class="text-steel-500 dark:text-steel-400 text-sm">Ladowanie...</div>
+                        </div>
+                    </div>
+
+                    <!-- Grades Multi-Select -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Gatunki</label>
+                        <div id="bulk-grades-list" class="max-h-32 overflow-y-auto border border-steel-300 dark:border-steel-600 rounded-lg bg-white dark:bg-steel-800 p-2 space-y-1">
+                            <div class="text-steel-500 dark:text-steel-400 text-sm">Ladowanie...</div>
+                        </div>
+                    </div>
+
+                    <!-- Surface Finish Buttons -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Wykonczenie</label>
+                        <div id="bulk-surface-buttons" class="flex flex-wrap gap-2">
+                            <div class="text-steel-500 dark:text-steel-400 text-sm">Ladowanie...</div>
+                        </div>
+                    </div>
+
+                    <!-- Thickness Range -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Grubosc min (mm)</label>
+                            <input type="number" id="bulk-thickness-min" step="0.1" min="0" onchange="onBulkFilterChange()"
+                                   class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Grubosc max (mm)</label>
+                            <input type="number" id="bulk-thickness-max" step="0.1" min="0" onchange="onBulkFilterChange()"
+                                   class="w-full px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white">
+                        </div>
+                    </div>
+
+                    <!-- Width Buttons -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1">Szerokosc (mm)</label>
+                        <div id="bulk-widths-buttons" class="flex flex-wrap gap-2">
+                            <div class="text-steel-500 dark:text-steel-400 text-sm">Ladowanie...</div>
+                        </div>
+                    </div>
+
+                    <!-- Change Type & Value -->
+                    <div class="pt-4 border-t border-steel-200 dark:border-steel-700">
+                        <h3 class="font-semibold text-steel-800 dark:text-steel-200 mb-3">Zmiana ceny</h3>
+
+                        <div class="flex gap-4 mb-3">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="change-type" value="percentage" checked
+                                       class="w-4 h-4 text-primary-600"
+                                       onchange="onChangeTypeChange()">
+                                <span class="text-sm text-steel-700 dark:text-steel-300">Procentowa (%)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="change-type" value="absolute"
+                                       class="w-4 h-4 text-primary-600"
+                                       onchange="onChangeTypeChange()">
+                                <span class="text-sm text-steel-700 dark:text-steel-300">Absolutna (PLN/kg)</span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <input type="number" id="bulk-change-value" step="0.1" value="0"
+                                   class="w-32 px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white text-center font-mono"
+                                   onchange="onBulkFilterChange()">
+                            <span id="change-unit" class="text-steel-600 dark:text-steel-400 font-medium">%</span>
+                            <button onclick="loadPreview()"
+                                    class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
+                                Podglad
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Preview - pełna wysokość -->
+                <div class="flex flex-col min-h-[500px]">
+                    <h3 class="font-semibold text-steel-800 dark:text-steel-200 mb-2">Podglad zmian</h3>
+
+                    <!-- Summary -->
+                    <div id="preview-summary" class="bg-steel-50 dark:bg-steel-800 rounded-lg p-4 text-sm mb-3">
+                        <div class="text-steel-600 dark:text-steel-400">
+                            Kliknij "Podglad" aby zobaczyc zmiany
+                        </div>
+                    </div>
+
+                    <!-- Preview Table - rozciąga się na pełną wysokość -->
+                    <div id="preview-table-container" class="hidden flex-1 flex flex-col min-h-0">
+                        <div class="flex-1 overflow-auto border border-steel-200 dark:border-steel-700 rounded-lg">
+                            <table class="w-full text-sm">
+                                <thead class="bg-steel-50 dark:bg-steel-800 sticky top-0">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left">Gatunek</th>
+                                        <th class="px-3 py-2 text-left">Wyk.</th>
+                                        <th class="px-3 py-2 text-right">Grub.</th>
+                                        <th class="px-3 py-2 text-right">Szer.</th>
+                                        <th class="px-3 py-2 text-right">Obecna</th>
+                                        <th class="px-3 py-2 text-right">Nowa</th>
+                                        <th class="px-3 py-2 text-right">Roznica</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="preview-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="preview-pagination" class="mt-2 flex items-center justify-between text-sm text-steel-600 dark:text-steel-400 flex-shrink-0">
+                        </div>
+                    </div>
+
+                    <!-- Loading -->
+                    <div id="preview-loading" class="hidden text-center py-8">
+                        <svg class="animate-spin h-8 w-8 mx-auto text-primary-500" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-steel-200 dark:border-steel-700 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="confirm-change" class="w-4 h-4 text-primary-600 rounded">
+                <label for="confirm-change" class="text-sm text-steel-700 dark:text-steel-300">
+                    Potwierdzam zmiane <span id="confirm-count">0</span> cen
+                </label>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeBulkChangeModal()"
+                        class="px-4 py-2 border border-steel-300 dark:border-steel-600 text-steel-700 dark:text-steel-300 rounded-lg hover:bg-steel-50 dark:hover:bg-steel-800 transition-colors">
+                    Anuluj
+                </button>
+                <button id="apply-changes-btn" onclick="applyBulkChanges()" disabled
+                        class="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-steel-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors">
+                    Zastosuj zmiany
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -526,5 +723,584 @@
         }
         updateStats(matrixData.materials.length, withPrice);
     }
+
+    // === Bulk Change Modal Functions ===
+
+    let bulkFilterOptions = null;
+    let previewData = null;
+    let previewPage = 1;
+
+    function openBulkChangeModal() {
+        document.getElementById('bulk-change-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        loadFilterOptions();
+        resetBulkForm();
+    }
+
+    function closeBulkChangeModal() {
+        document.getElementById('bulk-change-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function resetBulkForm() {
+        document.getElementById('bulk-surface').value = '';
+        document.getElementById('bulk-thickness-min').value = '';
+        document.getElementById('bulk-thickness-max').value = '';
+        document.getElementById('bulk-change-value').value = '0';
+        document.querySelector('input[name="change-type"][value="percentage"]').checked = true;
+        document.getElementById('change-unit').textContent = '%';
+        document.getElementById('confirm-change').checked = false;
+        document.getElementById('apply-changes-btn').disabled = true;
+        document.getElementById('confirm-count').textContent = '0';
+
+        // Reset category buttons
+        document.querySelectorAll('#bulk-category-buttons button').forEach(btn => {
+            btn.classList.remove('bg-primary-600', 'text-white');
+            btn.classList.add('bg-steel-100', 'dark:bg-steel-700', 'text-steel-700', 'dark:text-steel-300');
+            btn.dataset.selected = 'false';
+        });
+
+        // Reset multi-select checkboxes
+        document.querySelectorAll('#bulk-groups-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('#bulk-grades-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+        // Reset button groups
+        ['#bulk-widths-buttons button', '#bulk-surface-buttons button'].forEach(selector => {
+            document.querySelectorAll(selector).forEach(btn => {
+                btn.classList.remove('bg-primary-600', 'text-white');
+                btn.classList.add('bg-steel-100', 'dark:bg-steel-700', 'text-steel-700', 'dark:text-steel-300');
+                btn.dataset.selected = 'false';
+            });
+        });
+
+        const summaryDiv = document.getElementById('preview-summary');
+        summaryDiv.textContent = '';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'text-steel-600 dark:text-steel-400';
+        msgDiv.textContent = 'Kliknij "Podglad" aby zobaczyc zmiany';
+        summaryDiv.appendChild(msgDiv);
+
+        document.getElementById('preview-table-container').classList.add('hidden');
+        previewData = null;
+    }
+
+    async function loadFilterOptions() {
+        try {
+            const selectedCategories = getSelectedCategories();
+            const selectedGroups = getSelectedGroups();
+            const selectedGrades = getSelectedGrades();
+            const selectedSurfaces = getSelectedSurfaces();
+            const selectedWidths = getSelectedWidths();
+
+            // Build URL with query params - dwukierunkowe filtrowanie
+            const params = new URLSearchParams();
+            if (selectedCategories.length > 0) {
+                params.set('categories', selectedCategories.join(','));
+            }
+            if (selectedGroups.length > 0) {
+                params.set('group_ids', selectedGroups.join(','));
+            }
+            if (selectedGrades.length > 0) {
+                params.set('grades', selectedGrades.join(','));
+            }
+            if (selectedSurfaces.length > 0) {
+                params.set('surface_finishes', selectedSurfaces.join(','));
+            }
+            if (selectedWidths.length > 0) {
+                params.set('widths', selectedWidths.join(','));
+            }
+            const queryString = params.toString();
+            const url = queryString
+                ? `/api/admin/base-prices/filter-options?${queryString}`
+                : '/api/admin/base-prices/filter-options';
+
+            const response = await fetch(url);
+            bulkFilterOptions = await response.json();
+
+            // Update category buttons visibility
+            const availableCategoryValues = bulkFilterOptions.categories.map(c => c.value);
+            document.querySelectorAll('#bulk-category-buttons button').forEach(btn => {
+                const cat = btn.dataset.category;
+                const isAvailable = availableCategoryValues.includes(cat);
+                btn.style.display = isAvailable ? '' : 'none';
+            });
+
+            // Update groups multi-select list
+            const groupsList = document.getElementById('bulk-groups-list');
+            // selectedGroups already defined above
+            groupsList.replaceChildren();
+            if (bulkFilterOptions.groups.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'text-steel-500 dark:text-steel-400 text-sm';
+                emptyMsg.textContent = 'Brak grup';
+                groupsList.appendChild(emptyMsg);
+            } else {
+                for (const group of bulkFilterOptions.groups) {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center gap-2 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-700 px-1 py-0.5 rounded';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = group.id;
+                    checkbox.className = 'w-4 h-4 text-primary-600 rounded';
+                    checkbox.checked = selectedGroups.includes(group.id);
+                    checkbox.onchange = function() {
+                        // Reload filter options to update grades based on selected groups
+                        loadFilterOptions();
+                        onBulkFilterChange();
+                    };
+                    const span = document.createElement('span');
+                    span.className = 'text-sm text-steel-700 dark:text-steel-300';
+                    span.textContent = group.name;
+                    label.appendChild(checkbox);
+                    label.appendChild(span);
+                    groupsList.appendChild(label);
+                }
+            }
+
+            // Update grades multi-select list
+            const gradesList = document.getElementById('bulk-grades-list');
+            // selectedGrades already defined at function start
+            gradesList.replaceChildren();
+            if (bulkFilterOptions.grades.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'text-steel-500 dark:text-steel-400 text-sm';
+                emptyMsg.textContent = 'Brak gatunkow';
+                gradesList.appendChild(emptyMsg);
+            } else {
+                for (const grade of bulkFilterOptions.grades) {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center gap-2 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-700 px-1 py-0.5 rounded';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = grade;
+                    checkbox.className = 'w-4 h-4 text-primary-600 rounded';
+                    checkbox.checked = selectedGrades.includes(grade);
+                    checkbox.onchange = function() {
+                        // Reload filter options to update surface finishes based on grades
+                        loadFilterOptions();
+                        onBulkFilterChange();
+                    };
+                    const span = document.createElement('span');
+                    span.className = 'text-sm text-steel-700 dark:text-steel-300 font-mono';
+                    span.textContent = grade;
+                    label.appendChild(checkbox);
+                    label.appendChild(span);
+                    gradesList.appendChild(label);
+                }
+            }
+
+            // Update widths buttons
+            const widthsContainer = document.getElementById('bulk-widths-buttons');
+            // selectedWidths already defined at function start
+            widthsContainer.replaceChildren();
+            if (bulkFilterOptions.widths.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'text-steel-500 dark:text-steel-400 text-sm';
+                emptyMsg.textContent = 'Brak szerokosci';
+                widthsContainer.appendChild(emptyMsg);
+            } else {
+                for (const width of bulkFilterOptions.widths) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.dataset.width = width;
+                    btn.dataset.selected = selectedWidths.includes(width) ? 'true' : 'false';
+                    btn.className = 'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ' +
+                        (selectedWidths.includes(width)
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 hover:bg-steel-200 dark:hover:bg-steel-600');
+                    btn.textContent = width;
+                    btn.onclick = function() {
+                        toggleWidthButton(this);
+                    };
+                    widthsContainer.appendChild(btn);
+                }
+            }
+
+            // Update surface finish buttons
+            const surfaceContainer = document.getElementById('bulk-surface-buttons');
+            // selectedSurfaces already defined at function start
+            surfaceContainer.replaceChildren();
+            if (bulkFilterOptions.surface_finishes.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'text-steel-500 dark:text-steel-400 text-sm';
+                emptyMsg.textContent = 'Brak wykonczeni';
+                surfaceContainer.appendChild(emptyMsg);
+            } else {
+                for (const sf of bulkFilterOptions.surface_finishes) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.dataset.surface = sf;
+                    btn.dataset.selected = selectedSurfaces.includes(sf) ? 'true' : 'false';
+                    btn.className = 'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ' +
+                        (selectedSurfaces.includes(sf)
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 hover:bg-steel-200 dark:hover:bg-steel-600');
+                    btn.textContent = sf;
+                    btn.onclick = function() {
+                        toggleSurfaceButton(this);
+                    };
+                    surfaceContainer.appendChild(btn);
+                }
+            }
+
+        } catch (error) {
+            console.error('Error loading filter options:', error);
+        }
+    }
+
+    function getSelectedGroups() {
+        const checkboxes = document.querySelectorAll('#bulk-groups-list input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(cb => parseInt(cb.value));
+    }
+
+    function getSelectedGrades() {
+        const checkboxes = document.querySelectorAll('#bulk-grades-list input[type="checkbox"]:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function getSelectedWidths() {
+        const buttons = document.querySelectorAll('#bulk-widths-buttons button[data-selected="true"]');
+        return Array.from(buttons).map(btn => parseFloat(btn.dataset.width));
+    }
+
+    function getSelectedSurfaces() {
+        const buttons = document.querySelectorAll('#bulk-surface-buttons button[data-selected="true"]');
+        return Array.from(buttons).map(btn => btn.dataset.surface);
+    }
+
+    function toggleSurfaceButton(btn) {
+        const isSelected = btn.dataset.selected === 'true';
+        btn.dataset.selected = isSelected ? 'false' : 'true';
+        if (isSelected) {
+            btn.classList.remove('bg-primary-600', 'text-white');
+            btn.classList.add('bg-steel-100', 'dark:bg-steel-700', 'text-steel-700', 'dark:text-steel-300');
+        } else {
+            btn.classList.remove('bg-steel-100', 'dark:bg-steel-700', 'text-steel-700', 'dark:text-steel-300');
+            btn.classList.add('bg-primary-600', 'text-white');
+        }
+        // Dwukierunkowe filtrowanie - aktualizuj wszystkie listy
+        loadFilterOptions();
+        onBulkFilterChange();
+    }
+
+    function toggleWidthButton(btn) {
+        const isSelected = btn.dataset.selected === 'true';
+        btn.dataset.selected = isSelected ? 'false' : 'true';
+        if (isSelected) {
+            btn.classList.remove('bg-primary-600', 'text-white');
+            btn.classList.add('bg-steel-100', 'dark:bg-steel-700', 'text-steel-700', 'dark:text-steel-300');
+        } else {
+            btn.classList.remove('bg-steel-100', 'dark:bg-steel-700', 'text-steel-700', 'dark:text-steel-300');
+            btn.classList.add('bg-primary-600', 'text-white');
+        }
+        // Dwukierunkowe filtrowanie - aktualizuj wszystkie listy
+        loadFilterOptions();
+        onBulkFilterChange();
+    }
+
+    function getSelectedCategories() {
+        const buttons = document.querySelectorAll('#bulk-category-buttons button[data-selected="true"]');
+        return Array.from(buttons).map(btn => btn.dataset.category);
+    }
+
+    function toggleCategoryButton(btn) {
+        const isSelected = btn.dataset.selected === 'true';
+        btn.dataset.selected = isSelected ? 'false' : 'true';
+        if (isSelected) {
+            btn.classList.remove('bg-primary-600', 'text-white');
+            btn.classList.add('bg-steel-100', 'dark:bg-steel-700', 'text-steel-700', 'dark:text-steel-300');
+        } else {
+            btn.classList.remove('bg-steel-100', 'dark:bg-steel-700', 'text-steel-700', 'dark:text-steel-300');
+            btn.classList.add('bg-primary-600', 'text-white');
+        }
+        // Reload filter options when categories change (affects groups and grades)
+        loadFilterOptions();
+        onBulkFilterChange();
+    }
+
+    function onBulkFilterChange() {
+        // Reset preview
+        previewData = null;
+        const summaryDiv = document.getElementById('preview-summary');
+        summaryDiv.textContent = '';
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'text-steel-600 dark:text-steel-400';
+        msgDiv.textContent = 'Kliknij "Podglad" aby zobaczyc zmiany';
+        summaryDiv.appendChild(msgDiv);
+
+        document.getElementById('preview-table-container').classList.add('hidden');
+        document.getElementById('confirm-change').checked = false;
+        document.getElementById('apply-changes-btn').disabled = true;
+        document.getElementById('confirm-count').textContent = '0';
+    }
+
+    function onChangeTypeChange() {
+        const changeType = document.querySelector('input[name="change-type"]:checked').value;
+        document.getElementById('change-unit').textContent = changeType === 'percentage' ? '%' : 'PLN/kg';
+        onBulkFilterChange();
+    }
+
+    function getBulkFilters() {
+        const getValue = (id) => {
+            const val = document.getElementById(id).value;
+            return val || null;
+        };
+
+        const getNumberValue = (id) => {
+            const val = document.getElementById(id).value;
+            return val ? parseFloat(val) : null;
+        };
+
+        const selectedCategories = getSelectedCategories();
+        const selectedGroups = getSelectedGroups();
+        const selectedGrades = getSelectedGrades();
+        const selectedSurfaces = getSelectedSurfaces();
+        const selectedWidths = getSelectedWidths();
+
+        return {
+            categories: selectedCategories.length > 0 ? selectedCategories : null,
+            group_ids: selectedGroups.length > 0 ? selectedGroups : null,
+            grades: selectedGrades.length > 0 ? selectedGrades : null,
+            surface_finishes: selectedSurfaces.length > 0 ? selectedSurfaces : null,
+            thickness_min: getNumberValue('bulk-thickness-min'),
+            thickness_max: getNumberValue('bulk-thickness-max'),
+            widths: selectedWidths.length > 0 ? selectedWidths : null,
+        };
+    }
+
+    function createSummaryElement(label, value, valueClass = '') {
+        const div = document.createElement('div');
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'text-steel-500 dark:text-steel-400';
+        labelDiv.textContent = label;
+        const valueDiv = document.createElement('div');
+        valueDiv.className = valueClass;
+        valueDiv.textContent = value;
+        div.appendChild(labelDiv);
+        div.appendChild(valueDiv);
+        return div;
+    }
+
+    async function loadPreview(page = 1) {
+        previewPage = page;
+
+        const filters = getBulkFilters();
+        const changeType = document.querySelector('input[name="change-type"]:checked').value;
+        const changeValue = parseFloat(document.getElementById('bulk-change-value').value) || 0;
+
+        const summaryDiv = document.getElementById('preview-summary');
+
+        if (changeValue === 0) {
+            summaryDiv.textContent = '';
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'text-amber-600 dark:text-amber-400';
+            msgDiv.textContent = 'Wprowadz wartosc zmiany rozna od 0';
+            summaryDiv.appendChild(msgDiv);
+            return;
+        }
+
+        document.getElementById('preview-loading').classList.remove('hidden');
+        document.getElementById('preview-table-container').classList.add('hidden');
+
+        try {
+            const response = await fetch(`/api/admin/base-prices/bulk-change/preview?page=${page}&per_page=20`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filters: filters,
+                    change_type: changeType,
+                    change_value: changeValue,
+                    round_to: 2
+                })
+            });
+
+            previewData = await response.json();
+
+            document.getElementById('preview-loading').classList.add('hidden');
+
+            if (previewData.total_affected === 0) {
+                summaryDiv.textContent = '';
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'text-amber-600 dark:text-amber-400';
+                msgDiv.textContent = 'Brak cen pasujacych do filtrow';
+                summaryDiv.appendChild(msgDiv);
+                return;
+            }
+
+            // Build summary using DOM methods
+            const changeSign = changeValue > 0 ? '+' : '';
+            const changeUnit = changeType === 'percentage' ? '%' : ' PLN/kg';
+            const totalChange = previewData.total_new_value - previewData.total_current_value;
+            const totalChangeSign = totalChange >= 0 ? '+' : '';
+
+            summaryDiv.textContent = '';
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'grid grid-cols-2 gap-4';
+
+            gridDiv.appendChild(createSummaryElement('Pozycji do zmiany', previewData.total_affected, 'text-xl font-bold text-steel-900 dark:text-white'));
+            gridDiv.appendChild(createSummaryElement('Zmiana', `${changeSign}${changeValue}${changeUnit}`, `text-xl font-bold ${changeValue >= 0 ? 'text-green-600' : 'text-red-600'}`));
+            gridDiv.appendChild(createSummaryElement('Suma obecna', `${previewData.total_current_value.toFixed(2)} PLN`, 'font-mono'));
+
+            const newSumDiv = document.createElement('div');
+            const newSumLabel = document.createElement('div');
+            newSumLabel.className = 'text-steel-500 dark:text-steel-400';
+            newSumLabel.textContent = 'Suma po zmianie';
+            const newSumValue = document.createElement('div');
+            newSumValue.className = 'font-mono';
+            newSumValue.textContent = `${previewData.total_new_value.toFixed(2)} PLN `;
+            const changeSpan = document.createElement('span');
+            changeSpan.className = totalChange >= 0 ? 'text-green-600' : 'text-red-600';
+            changeSpan.textContent = `(${totalChangeSign}${totalChange.toFixed(2)})`;
+            newSumValue.appendChild(changeSpan);
+            newSumDiv.appendChild(newSumLabel);
+            newSumDiv.appendChild(newSumValue);
+            gridDiv.appendChild(newSumDiv);
+
+            summaryDiv.appendChild(gridDiv);
+
+            // Show preview table
+            const tbody = document.getElementById('preview-table-body');
+            tbody.textContent = '';
+
+            for (const item of previewData.items) {
+                const tr = document.createElement('tr');
+                tr.className = 'border-t border-steel-100 dark:border-steel-700';
+
+                const tdGrade = document.createElement('td');
+                tdGrade.className = 'px-3 py-2 font-mono';
+                tdGrade.textContent = item.material_grade;
+                tr.appendChild(tdGrade);
+
+                const tdSurface = document.createElement('td');
+                tdSurface.className = 'px-3 py-2';
+                tdSurface.textContent = item.surface_finish;
+                tr.appendChild(tdSurface);
+
+                const tdThickness = document.createElement('td');
+                tdThickness.className = 'px-3 py-2 text-right text-steel-600 dark:text-steel-400';
+                tdThickness.textContent = item.thickness;
+                tr.appendChild(tdThickness);
+
+                const tdWidth = document.createElement('td');
+                tdWidth.className = 'px-3 py-2 text-right text-steel-600 dark:text-steel-400';
+                tdWidth.textContent = item.width;
+                tr.appendChild(tdWidth);
+
+                const tdCurrent = document.createElement('td');
+                tdCurrent.className = 'px-3 py-2 text-right font-mono';
+                tdCurrent.textContent = item.current_price.toFixed(2);
+                tr.appendChild(tdCurrent);
+
+                const tdNew = document.createElement('td');
+                tdNew.className = 'px-3 py-2 text-right font-mono font-semibold';
+                tdNew.textContent = item.new_price.toFixed(2);
+                tr.appendChild(tdNew);
+
+                const tdDiff = document.createElement('td');
+                tdDiff.className = `px-3 py-2 text-right font-mono ${item.change_amount >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                tdDiff.textContent = `${item.change_amount >= 0 ? '+' : ''}${item.change_amount.toFixed(2)}`;
+                tr.appendChild(tdDiff);
+
+                tbody.appendChild(tr);
+            }
+
+            document.getElementById('preview-table-container').classList.remove('hidden');
+
+            // Pagination
+            const paginationDiv = document.getElementById('preview-pagination');
+            paginationDiv.textContent = '';
+            if (previewData.total_pages > 1) {
+                const pageInfo = document.createElement('span');
+                pageInfo.textContent = `Strona ${previewData.page} z ${previewData.total_pages}`;
+                paginationDiv.appendChild(pageInfo);
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'flex gap-2';
+
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'px-2 py-1 border rounded disabled:opacity-50';
+                prevBtn.textContent = 'Poprzednia';
+                prevBtn.disabled = previewData.page <= 1;
+                prevBtn.onclick = () => loadPreview(Math.max(1, previewData.page - 1));
+                btnContainer.appendChild(prevBtn);
+
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'px-2 py-1 border rounded disabled:opacity-50';
+                nextBtn.textContent = 'Nastepna';
+                nextBtn.disabled = previewData.page >= previewData.total_pages;
+                nextBtn.onclick = () => loadPreview(Math.min(previewData.total_pages, previewData.page + 1));
+                btnContainer.appendChild(nextBtn);
+
+                paginationDiv.appendChild(btnContainer);
+            }
+
+            // Update confirmation
+            document.getElementById('confirm-count').textContent = previewData.total_affected;
+
+            // Enable apply button handler
+            document.getElementById('confirm-change').onchange = function() {
+                document.getElementById('apply-changes-btn').disabled = !this.checked;
+            };
+
+        } catch (error) {
+            console.error('Error loading preview:', error);
+            document.getElementById('preview-loading').classList.add('hidden');
+            summaryDiv.textContent = '';
+            const errDiv = document.createElement('div');
+            errDiv.className = 'text-red-600';
+            errDiv.textContent = 'Blad podczas ladowania podgladu';
+            summaryDiv.appendChild(errDiv);
+        }
+    }
+
+    async function applyBulkChanges() {
+        if (!previewData || !document.getElementById('confirm-change').checked) return;
+
+        const filters = getBulkFilters();
+        const changeType = document.querySelector('input[name="change-type"]:checked').value;
+        const changeValue = parseFloat(document.getElementById('bulk-change-value').value) || 0;
+
+        const applyBtn = document.getElementById('apply-changes-btn');
+        applyBtn.disabled = true;
+        applyBtn.textContent = 'Zapisywanie...';
+
+        try {
+            const response = await fetch('/api/admin/base-prices/bulk-change/apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filters: filters,
+                    change_type: changeType,
+                    change_value: changeValue,
+                    round_to: 2
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                closeBulkChangeModal();
+                loadMatrix(); // Reload the matrix
+
+                // Show success message
+                alert(`Zmieniono ${result.updated_count} cen.\nPoprzednia suma: ${result.total_previous.toFixed(2)} PLN\nNowa suma: ${result.total_new.toFixed(2)} PLN`);
+            } else {
+                throw new Error('Failed to apply changes');
+            }
+
+        } catch (error) {
+            console.error('Error applying changes:', error);
+            alert('Blad podczas zapisywania zmian');
+        } finally {
+            applyBtn.textContent = 'Zastosuj zmiany';
+        }
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeBulkChangeModal();
+        }
+    });
 </script>
 {% endblock %}
