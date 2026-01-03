@@ -1,0 +1,815 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Uzytkownicy - Panel Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-steel-900 dark:text-white">Uzytkownicy</h1>
+            <p class="mt-2 text-steel-600 dark:text-steel-400">Zarzadzanie uzytkownikami i kluczami API</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="/admin" class="px-4 py-2 bg-steel-200 dark:bg-steel-700 text-steel-700 dark:text-steel-200 rounded-lg font-medium hover:bg-steel-300 dark:hover:bg-steel-600 transition-colors">
+                Powrot
+            </a>
+            <button onclick="openAddUserModal()" class="px-4 py-2 gradient-bg text-white rounded-lg font-medium hover:opacity-90 transition-opacity shadow-lg shadow-primary-500/25">
+                Dodaj uzytkownika
+            </button>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-lg border border-steel-200 dark:border-steel-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-steel-50 dark:bg-steel-800 border-b border-steel-200 dark:border-steel-700">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Uzytkownik</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Rola</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Ostatnie logowanie</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body" class="divide-y divide-steel-200 dark:divide-steel-700">
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-steel-500 dark:text-steel-400">
+                            Ladowanie...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- API Keys Section -->
+    <div class="mt-12">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-steel-900 dark:text-white">Klucze API</h2>
+            <button onclick="openAddApiKeyModal()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                Dodaj klucz API
+            </button>
+        </div>
+
+        <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-lg border border-steel-200 dark:border-steel-700 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-steel-50 dark:bg-steel-800 border-b border-steel-200 dark:border-steel-700">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Nazwa</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Uzytkownik</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Uprawnienia</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Ostatnie uzycie</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-steel-600 dark:text-steel-400 uppercase tracking-wider">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="api-keys-table-body" class="divide-y divide-steel-200 dark:divide-steel-700">
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-steel-500 dark:text-steel-400">
+                                Ladowanie...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="add-user-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-xl font-bold text-steel-900 dark:text-white mb-6">Dodaj uzytkownika</h3>
+        <form id="add-user-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Nazwa uzytkownika</label>
+                <input type="text" name="username" required minlength="3" maxlength="50"
+                       class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Email (opcjonalnie)</label>
+                <input type="email" name="email"
+                       class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Haslo</label>
+                <input type="password" name="password" required minlength="6"
+                       class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Rola</label>
+                <select name="role" required
+                        class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+                    <option value="viewer">Viewer - tylko podglad</option>
+                    <option value="editor">Editor - edycja cen</option>
+                    <option value="admin">Admin - pelny dostep</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeModal('add-user-modal')"
+                        class="flex-1 px-4 py-2 bg-steel-200 dark:bg-steel-700 text-steel-700 dark:text-steel-200 rounded-lg font-medium hover:bg-steel-300 dark:hover:bg-steel-600 transition-colors">
+                    Anuluj
+                </button>
+                <button type="submit"
+                        class="flex-1 px-4 py-2 gradient-bg text-white rounded-lg font-medium hover:opacity-90 transition-opacity">
+                    Dodaj
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="edit-user-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-xl font-bold text-steel-900 dark:text-white mb-6">Edytuj uzytkownika</h3>
+        <form id="edit-user-form" class="space-y-4">
+            <input type="hidden" name="user_id">
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Email</label>
+                <input type="email" name="email"
+                       class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Rola</label>
+                <select name="role"
+                        class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+                    <option value="viewer">Viewer - tylko podglad</option>
+                    <option value="editor">Editor - edycja cen</option>
+                    <option value="admin">Admin - pelny dostep</option>
+                </select>
+            </div>
+            <div>
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="is_active" class="rounded text-primary-600 focus:ring-primary-500">
+                    <span class="text-sm text-steel-700 dark:text-steel-300">Konto aktywne</span>
+                </label>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeModal('edit-user-modal')"
+                        class="flex-1 px-4 py-2 bg-steel-200 dark:bg-steel-700 text-steel-700 dark:text-steel-200 rounded-lg font-medium hover:bg-steel-300 dark:hover:bg-steel-600 transition-colors">
+                    Anuluj
+                </button>
+                <button type="submit"
+                        class="flex-1 px-4 py-2 gradient-bg text-white rounded-lg font-medium hover:opacity-90 transition-opacity">
+                    Zapisz
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div id="reset-password-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-xl font-bold text-steel-900 dark:text-white mb-6">Resetuj haslo</h3>
+        <form id="reset-password-form" class="space-y-4">
+            <input type="hidden" name="user_id">
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Nowe haslo</label>
+                <input type="password" name="new_password" required minlength="6"
+                       class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+            </div>
+            <div>
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="must_change" checked class="rounded text-primary-600 focus:ring-primary-500">
+                    <span class="text-sm text-steel-700 dark:text-steel-300">Wymaga zmiany hasla przy logowaniu</span>
+                </label>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeModal('reset-password-modal')"
+                        class="flex-1 px-4 py-2 bg-steel-200 dark:bg-steel-700 text-steel-700 dark:text-steel-200 rounded-lg font-medium hover:bg-steel-300 dark:hover:bg-steel-600 transition-colors">
+                    Anuluj
+                </button>
+                <button type="submit"
+                        class="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors">
+                    Resetuj haslo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add API Key Modal -->
+<div id="add-api-key-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-xl font-bold text-steel-900 dark:text-white mb-6">Dodaj klucz API</h3>
+        <form id="add-api-key-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Nazwa/opis klucza</label>
+                <input type="text" name="name" required maxlength="100"
+                       class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500"
+                       placeholder="np. Integracja ERP">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Uzytkownik</label>
+                <select name="user_id" required id="api-key-user-select"
+                        class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Uprawnienia</label>
+                <select name="permissions" required
+                        class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500">
+                    <option value="read">Read - tylko odczyt</option>
+                    <option value="write">Write - odczyt i zapis</option>
+                    <option value="full">Full - pelny dostep</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">Waznosc (dni)</label>
+                <input type="number" name="expires_in_days" min="1" max="365"
+                       class="w-full px-4 py-2 rounded-lg border border-steel-300 dark:border-steel-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:ring-2 focus:ring-primary-500"
+                       placeholder="Pozostaw puste dla bezterminowego">
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeModal('add-api-key-modal')"
+                        class="flex-1 px-4 py-2 bg-steel-200 dark:bg-steel-700 text-steel-700 dark:text-steel-200 rounded-lg font-medium hover:bg-steel-300 dark:hover:bg-steel-600 transition-colors">
+                    Anuluj
+                </button>
+                <button type="submit"
+                        class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                    Utworz klucz
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Show API Key Modal -->
+<div id="show-api-key-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-steel-900 dark:text-white">Klucz API utworzony!</h3>
+                <p class="text-sm text-steel-600 dark:text-steel-400">Skopiuj klucz - bedzie widoczny tylko teraz</p>
+            </div>
+        </div>
+        <div class="bg-steel-100 dark:bg-steel-800 rounded-lg p-4 mb-6">
+            <code id="api-key-value" class="text-sm text-steel-900 dark:text-steel-100 break-all select-all"></code>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="copyApiKey()" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                Kopiuj klucz
+            </button>
+            <button onclick="closeModal('show-api-key-modal')" class="flex-1 px-4 py-2 gradient-bg text-white rounded-lg font-medium hover:opacity-90 transition-opacity">
+                Zamknij
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let usersData = [];
+
+    // HTML escape function to prevent XSS
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
+    // Extract error message from API response
+    function getErrorMessage(data) {
+        if (!data) return 'Nieznany blad';
+        if (typeof data.detail === 'string') return data.detail;
+        if (Array.isArray(data.detail)) {
+            // FastAPI validation errors
+            return data.detail.map(err => {
+                const field = err.loc ? err.loc.join('.') : '';
+                return field ? `${field}: ${err.msg}` : err.msg;
+            }).join(', ');
+        }
+        if (typeof data.detail === 'object') return JSON.stringify(data.detail);
+        if (data.message) return data.message;
+        return 'Nieznany blad';
+    }
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUsers();
+        loadApiKeys();
+    });
+
+    async function loadUsers() {
+        try {
+            const response = await fetch('/api/admin/users');
+            const data = await response.json();
+            usersData = data.users;
+            renderUsersTable(data.users);
+            updateUserSelect(data.users);
+        } catch (error) {
+            console.error('Blad ladowania uzytkownikow:', error);
+        }
+    }
+
+    async function loadApiKeys() {
+        try {
+            const response = await fetch('/api/admin/api-keys');
+            const data = await response.json();
+            renderApiKeysTable(data.api_keys);
+        } catch (error) {
+            console.error('Blad ladowania kluczy API:', error);
+        }
+    }
+
+    function renderUsersTable(users) {
+        const tbody = document.getElementById('users-table-body');
+        tbody.replaceChildren();
+
+        if (users.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 5;
+            td.className = 'px-6 py-8 text-center text-steel-500 dark:text-steel-400';
+            td.textContent = 'Brak uzytkownikow';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        users.forEach(user => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-steel-50 dark:hover:bg-steel-800/50';
+
+            // User cell
+            const tdUser = document.createElement('td');
+            tdUser.className = 'px-6 py-4';
+            const userDiv = document.createElement('div');
+            userDiv.className = 'flex items-center';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mr-3';
+            const avatarSpan = document.createElement('span');
+            avatarSpan.className = 'text-primary-600 dark:text-primary-400 font-semibold';
+            avatarSpan.textContent = user.username.charAt(0).toUpperCase();
+            avatar.appendChild(avatarSpan);
+
+            const userInfo = document.createElement('div');
+            const userName = document.createElement('div');
+            userName.className = 'font-medium text-steel-900 dark:text-white';
+            userName.textContent = user.username;
+            const userEmail = document.createElement('div');
+            userEmail.className = 'text-sm text-steel-500 dark:text-steel-400';
+            userEmail.textContent = user.email || '-';
+            userInfo.appendChild(userName);
+            userInfo.appendChild(userEmail);
+
+            userDiv.appendChild(avatar);
+            userDiv.appendChild(userInfo);
+            tdUser.appendChild(userDiv);
+
+            // Role cell
+            const tdRole = document.createElement('td');
+            tdRole.className = 'px-6 py-4';
+            const roleSpan = document.createElement('span');
+            roleSpan.className = 'px-2 py-1 rounded-full text-xs font-medium ' + getRoleBadgeClass(user.role);
+            roleSpan.textContent = user.role;
+            tdRole.appendChild(roleSpan);
+
+            // Status cell
+            const tdStatus = document.createElement('td');
+            tdStatus.className = 'px-6 py-4';
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'px-2 py-1 rounded-full text-xs font-medium ' + (user.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300');
+            statusSpan.textContent = user.is_active ? 'Aktywny' : 'Nieaktywny';
+            tdStatus.appendChild(statusSpan);
+
+            if (user.locked_until) {
+                const lockedSpan = document.createElement('span');
+                lockedSpan.className = 'ml-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300';
+                lockedSpan.textContent = 'Zablokowany';
+                tdStatus.appendChild(lockedSpan);
+            }
+            if (user.must_change_password) {
+                const pwdSpan = document.createElement('span');
+                pwdSpan.className = 'ml-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
+                pwdSpan.textContent = 'Wymaga zmiany hasla';
+                tdStatus.appendChild(pwdSpan);
+            }
+
+            // Last login cell
+            const tdLogin = document.createElement('td');
+            tdLogin.className = 'px-6 py-4 text-steel-600 dark:text-steel-400';
+            tdLogin.textContent = user.last_login ? formatDate(user.last_login) : 'Nigdy';
+
+            // Actions cell
+            const tdActions = document.createElement('td');
+            tdActions.className = 'px-6 py-4';
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'flex gap-2';
+
+            // Edit button
+            const editBtn = createActionButton('edit', 'text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30', 'Edytuj', () => openEditUserModal(user.id));
+            actionsDiv.appendChild(editBtn);
+
+            // Reset password button
+            const resetBtn = createActionButton('key', 'text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30', 'Resetuj haslo', () => openResetPasswordModal(user.id));
+            actionsDiv.appendChild(resetBtn);
+
+            // Unlock button (if locked)
+            if (user.locked_until) {
+                const unlockBtn = createActionButton('unlock', 'text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30', 'Odblokuj', () => unlockUser(user.id));
+                actionsDiv.appendChild(unlockBtn);
+            }
+
+            // Delete button
+            const deleteBtn = createActionButton('delete', 'text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30', 'Usun', () => deleteUser(user.id));
+            actionsDiv.appendChild(deleteBtn);
+
+            tdActions.appendChild(actionsDiv);
+
+            tr.appendChild(tdUser);
+            tr.appendChild(tdRole);
+            tr.appendChild(tdStatus);
+            tr.appendChild(tdLogin);
+            tr.appendChild(tdActions);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderApiKeysTable(apiKeys) {
+        const tbody = document.getElementById('api-keys-table-body');
+        tbody.replaceChildren();
+
+        if (apiKeys.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 6;
+            td.className = 'px-6 py-8 text-center text-steel-500 dark:text-steel-400';
+            td.textContent = 'Brak kluczy API';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        apiKeys.forEach(key => {
+            const user = usersData.find(u => u.id === key.user_id);
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-steel-50 dark:hover:bg-steel-800/50';
+
+            // Name cell
+            const tdName = document.createElement('td');
+            tdName.className = 'px-6 py-4';
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'font-medium text-steel-900 dark:text-white';
+            nameDiv.textContent = key.name;
+            const prefixDiv = document.createElement('div');
+            prefixDiv.className = 'text-sm text-steel-500 dark:text-steel-400 font-mono';
+            prefixDiv.textContent = key.key_prefix + '...';
+            tdName.appendChild(nameDiv);
+            tdName.appendChild(prefixDiv);
+
+            // User cell
+            const tdUser = document.createElement('td');
+            tdUser.className = 'px-6 py-4 text-steel-700 dark:text-steel-300';
+            tdUser.textContent = user ? user.username : 'ID: ' + key.user_id;
+
+            // Permissions cell
+            const tdPerm = document.createElement('td');
+            tdPerm.className = 'px-6 py-4';
+            const permSpan = document.createElement('span');
+            permSpan.className = 'px-2 py-1 rounded-full text-xs font-medium ' + getPermissionBadgeClass(key.permissions);
+            permSpan.textContent = key.permissions;
+            tdPerm.appendChild(permSpan);
+
+            // Status cell
+            const tdStatus = document.createElement('td');
+            tdStatus.className = 'px-6 py-4';
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'px-2 py-1 rounded-full text-xs font-medium ' + (key.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300');
+            statusSpan.textContent = key.is_active ? 'Aktywny' : 'Nieaktywny';
+            tdStatus.appendChild(statusSpan);
+
+            if (key.expires_at && new Date(key.expires_at) < new Date()) {
+                const expSpan = document.createElement('span');
+                expSpan.className = 'ml-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300';
+                expSpan.textContent = 'Wygasl';
+                tdStatus.appendChild(expSpan);
+            }
+
+            // Last used cell
+            const tdUsed = document.createElement('td');
+            tdUsed.className = 'px-6 py-4 text-steel-600 dark:text-steel-400';
+            tdUsed.textContent = key.last_used ? formatDate(key.last_used) : 'Nigdy';
+
+            // Actions cell
+            const tdActions = document.createElement('td');
+            tdActions.className = 'px-6 py-4';
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'flex gap-2';
+
+            const deactivateBtn = createActionButton('deactivate', 'text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30', 'Dezaktywuj', () => deactivateApiKey(key.id));
+            actionsDiv.appendChild(deactivateBtn);
+
+            const deleteBtn = createActionButton('delete', 'text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30', 'Usun', () => deleteApiKey(key.id));
+            actionsDiv.appendChild(deleteBtn);
+
+            tdActions.appendChild(actionsDiv);
+
+            tr.appendChild(tdName);
+            tr.appendChild(tdUser);
+            tr.appendChild(tdPerm);
+            tr.appendChild(tdStatus);
+            tr.appendChild(tdUsed);
+            tr.appendChild(tdActions);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function createActionButton(type, colorClass, title, onclick) {
+        const btn = document.createElement('button');
+        btn.className = 'p-2 rounded-lg transition-colors ' + colorClass;
+        btn.title = title;
+        btn.onclick = onclick;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'w-4 h-4');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('viewBox', '0 0 24 24');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+
+        const paths = {
+            'edit': 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
+            'key': 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
+            'unlock': 'M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z',
+            'delete': 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
+            'deactivate': 'M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'
+        };
+
+        path.setAttribute('d', paths[type] || paths['edit']);
+        svg.appendChild(path);
+        btn.appendChild(svg);
+        return btn;
+    }
+
+    function updateUserSelect(users) {
+        const select = document.getElementById('api-key-user-select');
+        select.replaceChildren();
+        users.forEach(u => {
+            const option = document.createElement('option');
+            option.value = u.id;
+            option.textContent = u.username;
+            select.appendChild(option);
+        });
+    }
+
+    function getRoleBadgeClass(role) {
+        switch(role) {
+            case 'admin': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+            case 'editor': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+            default: return 'bg-steel-100 dark:bg-steel-900/30 text-steel-700 dark:text-steel-300';
+        }
+    }
+
+    function getPermissionBadgeClass(permission) {
+        switch(permission) {
+            case 'full': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+            case 'write': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+            default: return 'bg-steel-100 dark:bg-steel-900/30 text-steel-700 dark:text-steel-300';
+        }
+    }
+
+    function formatDate(dateStr) {
+        return new Date(dateStr).toLocaleString('pl-PL');
+    }
+
+    // Modal functions
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function openAddUserModal() { openModal('add-user-modal'); }
+    function openAddApiKeyModal() { openModal('add-api-key-modal'); }
+
+    function openEditUserModal(userId) {
+        const user = usersData.find(u => u.id === userId);
+        if (!user) return;
+
+        const form = document.getElementById('edit-user-form');
+        form.user_id.value = user.id;
+        form.email.value = user.email || '';
+        form.role.value = user.role;
+        form.is_active.checked = user.is_active;
+
+        openModal('edit-user-modal');
+    }
+
+    function openResetPasswordModal(userId) {
+        document.getElementById('reset-password-form').user_id.value = userId;
+        openModal('reset-password-modal');
+    }
+
+    // Form handlers
+    document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+            const response = await fetch('/api/admin/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: formData.get('username'),
+                    email: formData.get('email') || null,
+                    password: formData.get('password'),
+                    role: formData.get('role'),
+                }),
+            });
+
+            if (response.ok) {
+                closeModal('add-user-modal');
+                e.target.reset();
+                loadUsers();
+            } else {
+                const data = await response.json();
+                alert('Blad: ' + getErrorMessage(data));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    });
+
+    document.getElementById('edit-user-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const userId = formData.get('user_id');
+
+        try {
+            const response = await fetch('/api/admin/users/' + encodeURIComponent(userId), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.get('email') || null,
+                    role: formData.get('role'),
+                    is_active: formData.get('is_active') === 'on',
+                }),
+            });
+
+            if (response.ok) {
+                closeModal('edit-user-modal');
+                loadUsers();
+            } else {
+                const data = await response.json();
+                alert('Blad: ' + getErrorMessage(data));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    });
+
+    document.getElementById('reset-password-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const userId = formData.get('user_id');
+
+        try {
+            const response = await fetch('/api/admin/users/' + encodeURIComponent(userId) + '/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    new_password: formData.get('new_password'),
+                    must_change: formData.get('must_change') === 'on',
+                }),
+            });
+
+            if (response.ok) {
+                closeModal('reset-password-modal');
+                e.target.reset();
+                loadUsers();
+                alert('Haslo zostalo zresetowane');
+            } else {
+                const data = await response.json();
+                alert('Blad: ' + getErrorMessage(data));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    });
+
+    document.getElementById('add-api-key-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+            const params = new URLSearchParams({ user_id: formData.get('user_id') });
+            const response = await fetch('/api/admin/api-keys?' + params.toString(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.get('name'),
+                    permissions: formData.get('permissions'),
+                    expires_in_days: formData.get('expires_in_days') ? parseInt(formData.get('expires_in_days')) : null,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                closeModal('add-api-key-modal');
+                e.target.reset();
+                loadApiKeys();
+
+                // Show the API key using textContent (safe)
+                document.getElementById('api-key-value').textContent = data.api_key;
+                openModal('show-api-key-modal');
+            } else {
+                const data = await response.json();
+                alert('Blad: ' + getErrorMessage(data));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    });
+
+    async function unlockUser(userId) {
+        try {
+            const response = await fetch('/api/admin/users/' + encodeURIComponent(userId) + '/unlock', { method: 'POST' });
+            if (response.ok) {
+                loadUsers();
+            } else {
+                const data = await response.json();
+                alert('Blad: ' + getErrorMessage(data));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    async function deleteUser(userId) {
+        if (!confirm('Czy na pewno chcesz usunac tego uzytkownika?')) return;
+
+        try {
+            const response = await fetch('/api/admin/users/' + encodeURIComponent(userId), { method: 'DELETE' });
+            if (response.ok) {
+                loadUsers();
+            } else {
+                const data = await response.json();
+                alert('Blad: ' + getErrorMessage(data));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    async function deactivateApiKey(keyId) {
+        try {
+            const response = await fetch('/api/admin/api-keys/' + encodeURIComponent(keyId) + '/deactivate', { method: 'POST' });
+            if (response.ok) {
+                loadApiKeys();
+            } else {
+                const data = await response.json();
+                alert('Blad: ' + getErrorMessage(data));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    async function deleteApiKey(keyId) {
+        if (!confirm('Czy na pewno chcesz usunac ten klucz API?')) return;
+
+        try {
+            const response = await fetch('/api/admin/api-keys/' + encodeURIComponent(keyId), { method: 'DELETE' });
+            if (response.ok) {
+                loadApiKeys();
+            } else {
+                const data = await response.json();
+                alert('Blad: ' + getErrorMessage(data));
+            }
+        } catch (error) {
+            alert('Blad sieci: ' + error.message);
+        }
+    }
+
+    function copyApiKey() {
+        const key = document.getElementById('api-key-value').textContent;
+        navigator.clipboard.writeText(key).then(() => {
+            alert('Klucz skopiowany do schowka!');
+        });
+    }
+
+    // Close modals on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('[id$="-modal"]').forEach(modal => {
+                modal.classList.add('hidden');
+            });
+        }
+    });
+</script>
+{% endblock %}

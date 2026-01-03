@@ -10,6 +10,29 @@ from ..models import User
 from .session import SessionManager
 
 
+async def get_optional_user(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Dependency - zwraca zalogowanego usera lub None.
+
+    Uzyj dla stron publicznych gdzie chcesz wyswietlic info o userze.
+    """
+    settings = get_settings()
+    session = SessionManager(settings.secret_key)
+    user_id = session.get_user_id(request)
+
+    if not user_id:
+        return None
+
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user or not user.is_active:
+        return None
+
+    return user
+
+
 async def get_current_user(
     request: Request,
     db: Session = Depends(get_db),

@@ -1824,3 +1824,86 @@ async def get_import_export_history(
         page=(offset // limit) + 1,
         per_page=limit,
     )
+
+
+# === Price History Endpoints ===
+
+@router.get("/price-history")
+async def get_price_history(
+    category: Optional[str] = Query(None, description="Kategoria materialu (INOX, MILD, ALU)"),
+    grade: Optional[str] = Query(None, description="Gatunek materialu"),
+    date_from: Optional[str] = Query(None, description="Data poczatkowa (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Data koncowa (YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Pobierz dane historyczne cen do wykresu.
+
+    Zwraca dane w formacie Chart.js:
+    - labels: daty
+    - datasets: serie danych (gatunek + powierzchnia)
+    """
+    from ..models.price import PriceChangeAudit
+
+    # Parse dates
+    try:
+        from_date = datetime.strptime(date_from, "%Y-%m-%d") if date_from else None
+        to_date = datetime.strptime(date_to, "%Y-%m-%d") if date_to else None
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Nieprawidlowy format daty")
+
+    # Build query for audit history
+    query = db.query(PriceChangeAudit)
+
+    if from_date:
+        query = query.filter(PriceChangeAudit.created_at >= from_date)
+    if to_date:
+        query = query.filter(PriceChangeAudit.created_at <= to_date)
+
+    audits = query.order_by(PriceChangeAudit.created_at).limit(100).all()
+
+    # If no data, return empty response
+    if not audits:
+        return {
+            "labels": [],
+            "datasets": [],
+            "stats": {
+                "totalChanges": 0,
+                "avgPrice": 0,
+                "trend": 0,
+            }
+        }
+
+    # Group by date and aggregate
+    from collections import defaultdict
+    daily_data = defaultdict(lambda: {"changes": 0, "total_value": 0, "count": 0})
+
+    for audit in audits:
+        date_key = audit.created_at.strftime("%Y-%m-%d")
+        daily_data[date_key]["changes"] += 1
+        daily_data[date_key]["total_value"] += audit.new_total
+        daily_data[date_key]["count"] += audit.affected_count
+
+    # Build response
+    labels = sorted(daily_data.keys())
+    values = [daily_data[d]["total_value"] / max(daily_data[d]["count"], 1) for d in labels]
+
+    # Calculate stats
+    total_changes = sum(d["changes"] for d in daily_data.values())
+    avg_price = sum(values) / len(values) if values else 0
+    trend = ((values[-1] - values[0]) / values[0] * 100) if len(values) >= 2 and values[0] > 0 else 0
+
+    return {
+        "labels": [datetime.strptime(d, "%Y-%m-%d").strftime("%d.%m") for d in labels],
+        "datasets": [
+            {
+                "label": "Srednia cena (PLN/kg)",
+                "data": values,
+            }
+        ],
+        "stats": {
+            "totalChanges": total_changes,
+            "avgPrice": round(avg_price, 2),
+            "trend": round(trend, 1),
+        }
+    }

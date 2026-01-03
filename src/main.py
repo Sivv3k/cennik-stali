@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from .config import get_settings
 from .database import init_db
 from .routers import materials_router, prices_router, import_export_router, admin_router, auth_router
-from .auth import require_admin
+from .auth import require_admin, get_optional_user
 from .models import User
 
 settings = get_settings()
@@ -48,25 +48,14 @@ app.include_router(auth_router)
 
 
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    """Strona główna."""
+async def home(request: Request, user: User | None = Depends(get_optional_user)):
+    """Strona główna - kalkulator cennika."""
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
             "title": settings.app_name,
-        },
-    )
-
-
-@app.get("/cennik", response_class=HTMLResponse)
-async def calculator(request: Request):
-    """Strona kalkulatora cennika."""
-    return templates.TemplateResponse(
-        "calculator.html",
-        {
-            "request": request,
-            "title": settings.app_name,
+            "user": user,
         },
     )
 
@@ -157,6 +146,32 @@ async def admin_import(request: Request, user: User = Depends(require_admin)):
         {
             "request": request,
             "title": f"{settings.app_name} - Import Cennika",
+            "user": user,
+        },
+    )
+
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users(request: Request, user: User = Depends(require_admin)):
+    """Panel administracyjny - zarządzanie użytkownikami."""
+    return templates.TemplateResponse(
+        "admin/users.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Użytkownicy",
+            "user": user,
+        },
+    )
+
+
+@app.get("/admin/history", response_class=HTMLResponse)
+async def admin_history(request: Request, user: User = Depends(require_admin)):
+    """Panel administracyjny - historia zmian cen."""
+    return templates.TemplateResponse(
+        "admin/history.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Historia Cen",
             "user": user,
         },
     )

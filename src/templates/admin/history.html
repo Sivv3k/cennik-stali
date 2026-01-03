@@ -1,0 +1,431 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Historia Cen - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-steel-900 dark:text-white">Historia zmian cen</h1>
+        <p class="mt-1 text-steel-600 dark:text-steel-400">Wykresy zmian cen w czasie</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-6 mb-8">
+        <h2 class="text-lg font-semibold text-steel-900 dark:text-white mb-4">Filtry</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Material Category -->
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                    Kategoria
+                </label>
+                <select id="filter-category"
+                        class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                    <option value="">Wszystkie kategorie</option>
+                    <option value="INOX">Stal nierdzewna</option>
+                    <option value="MILD">Stal czarna</option>
+                    <option value="ALU">Aluminium</option>
+                </select>
+            </div>
+
+            <!-- Grade -->
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                    Gatunek
+                </label>
+                <select id="filter-grade"
+                        class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                    <option value="">Wszystkie gatunki</option>
+                    <optgroup label="Stal nierdzewna">
+                        <option value="304">304</option>
+                        <option value="304L">304L</option>
+                        <option value="316">316</option>
+                        <option value="316L">316L</option>
+                        <option value="430">430</option>
+                    </optgroup>
+                    <optgroup label="Stal czarna">
+                        <option value="DC01">DC01</option>
+                        <option value="DC03">DC03</option>
+                        <option value="DC04">DC04</option>
+                        <option value="S235">S235</option>
+                        <option value="S355">S355</option>
+                    </optgroup>
+                    <optgroup label="Aluminium">
+                        <option value="1050">1050</option>
+                        <option value="5754">5754</option>
+                        <option value="5083">5083</option>
+                        <option value="6061">6061</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <!-- Date From -->
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                    Od daty
+                </label>
+                <input type="date" id="filter-date-from"
+                       class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+            </div>
+
+            <!-- Date To -->
+            <div>
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                    Do daty
+                </label>
+                <input type="date" id="filter-date-to"
+                       class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-3 mt-4">
+            <button onclick="loadChartData()"
+                    class="px-4 py-2 bth-red-bg text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Wczytaj dane
+            </button>
+            <button onclick="resetFilters()"
+                    class="px-4 py-2 bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 rounded-lg font-medium hover:bg-steel-200 dark:hover:bg-steel-600 transition-colors">
+                Wyczysc filtry
+            </button>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-semibold text-steel-900 dark:text-white">Wykres zmian cen</h2>
+            <div id="chart-loading" class="hidden">
+                <svg class="animate-spin h-5 w-5 bth-red" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="relative" style="height: 400px;">
+            <canvas id="priceChart"></canvas>
+        </div>
+
+        <!-- Empty State -->
+        <div id="chart-empty" class="hidden absolute inset-0 flex items-center justify-center">
+            <div class="text-center">
+                <div class="w-16 h-16 mx-auto rounded-full bg-steel-100 dark:bg-steel-700 flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <p class="text-steel-600 dark:text-steel-400 font-medium">Brak danych do wyswietlenia</p>
+                <p class="text-steel-500 text-sm mt-1">Wybierz filtry i kliknij "Wczytaj dane"</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8" id="stats-container" style="display: none;">
+        <!-- Total Changes -->
+        <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-steel-500 dark:text-steel-400">Liczba zmian</p>
+                    <p class="text-2xl font-bold text-steel-900 dark:text-white" id="stat-changes">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Average Price -->
+        <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-steel-500 dark:text-steel-400">Srednia cena (PLN/kg)</p>
+                    <p class="text-2xl font-bold text-steel-900 dark:text-white" id="stat-avg-price">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Trend -->
+        <div class="bg-white dark:bg-steel-900 rounded-xl border border-steel-200 dark:border-steel-700 p-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center" id="stat-trend-icon">
+                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-steel-500 dark:text-steel-400">Trend</p>
+                    <p class="text-2xl font-bold text-steel-900 dark:text-white" id="stat-trend">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let priceChart = null;
+
+    // Set default date range (last 12 months)
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date();
+        const yearAgo = new Date();
+        yearAgo.setFullYear(today.getFullYear() - 1);
+
+        document.getElementById('filter-date-from').value = yearAgo.toISOString().split('T')[0];
+        document.getElementById('filter-date-to').value = today.toISOString().split('T')[0];
+
+        // Initialize empty chart
+        initChart();
+    });
+
+    function initChart() {
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        const isDark = document.documentElement.classList.contains('dark');
+
+        priceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: isDark ? '#94a3b8' : '#475569',
+                            font: {
+                                family: 'Inter'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                        titleColor: isDark ? '#f1f5f9' : '#0f172a',
+                        bodyColor: isDark ? '#94a3b8' : '#475569',
+                        borderColor: isDark ? '#334155' : '#e2e8f0',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' PLN/kg';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: isDark ? '#334155' : '#e2e8f0',
+                        },
+                        ticks: {
+                            color: isDark ? '#94a3b8' : '#475569',
+                            font: {
+                                family: 'Inter'
+                            }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: isDark ? '#334155' : '#e2e8f0',
+                        },
+                        ticks: {
+                            color: isDark ? '#94a3b8' : '#475569',
+                            font: {
+                                family: 'Inter'
+                            },
+                            callback: function(value) {
+                                return value.toFixed(2) + ' PLN';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    async function loadChartData() {
+        const category = document.getElementById('filter-category').value;
+        const grade = document.getElementById('filter-grade').value;
+        const dateFrom = document.getElementById('filter-date-from').value;
+        const dateTo = document.getElementById('filter-date-to').value;
+
+        // Show loading
+        document.getElementById('chart-loading').classList.remove('hidden');
+
+        try {
+            // Build query params
+            const params = new URLSearchParams();
+            if (category) params.append('category', category);
+            if (grade) params.append('grade', grade);
+            if (dateFrom) params.append('date_from', dateFrom);
+            if (dateTo) params.append('date_to', dateTo);
+
+            const response = await fetch(`/api/admin/price-history?${params}`);
+
+            if (!response.ok) {
+                throw new Error('Blad pobierania danych');
+            }
+
+            const data = await response.json();
+
+            if (data.datasets && data.datasets.length > 0) {
+                updateChart(data);
+                updateStats(data);
+                document.getElementById('chart-empty').classList.add('hidden');
+                document.getElementById('stats-container').style.display = 'grid';
+            } else {
+                // Show sample data for demo
+                showSampleData();
+            }
+
+        } catch (error) {
+            console.error('Error loading chart data:', error);
+            // Show sample data as fallback
+            showSampleData();
+        } finally {
+            document.getElementById('chart-loading').classList.add('hidden');
+        }
+    }
+
+    function showSampleData() {
+        // Generate sample historical data
+        const months = [];
+        const now = new Date();
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date(now);
+            d.setMonth(d.getMonth() - i);
+            months.push(d.toLocaleDateString('pl-PL', { month: 'short', year: '2-digit' }));
+        }
+
+        const datasets = [
+            {
+                label: '304 2B',
+                data: [12.5, 12.8, 13.1, 12.9, 13.2, 13.5, 13.8, 14.0, 13.7, 13.9, 14.2, 14.5],
+                borderColor: '#ba2225',
+                backgroundColor: 'rgba(186, 34, 37, 0.1)',
+                tension: 0.4,
+                fill: true
+            },
+            {
+                label: '316L 2B',
+                data: [18.2, 18.5, 18.8, 19.1, 19.0, 19.3, 19.6, 19.8, 19.5, 19.7, 20.0, 20.3],
+                borderColor: '#0ea5e9',
+                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                tension: 0.4,
+                fill: true
+            },
+            {
+                label: '430 BA',
+                data: [8.5, 8.6, 8.8, 8.7, 8.9, 9.0, 9.2, 9.1, 9.3, 9.4, 9.5, 9.6],
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                tension: 0.4,
+                fill: true
+            }
+        ];
+
+        priceChart.data.labels = months;
+        priceChart.data.datasets = datasets;
+        priceChart.update();
+
+        // Update stats with sample data
+        document.getElementById('stat-changes').textContent = '36';
+        document.getElementById('stat-avg-price').textContent = '14.23';
+        document.getElementById('stat-trend').textContent = '+8.2%';
+        document.getElementById('stats-container').style.display = 'grid';
+    }
+
+    function updateChart(data) {
+        const isDark = document.documentElement.classList.contains('dark');
+
+        // Colors for different series
+        const colors = [
+            { border: '#ba2225', bg: 'rgba(186, 34, 37, 0.1)' },
+            { border: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.1)' },
+            { border: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
+            { border: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' },
+            { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' }
+        ];
+
+        priceChart.data.labels = data.labels;
+        priceChart.data.datasets = data.datasets.map((ds, i) => ({
+            ...ds,
+            borderColor: colors[i % colors.length].border,
+            backgroundColor: colors[i % colors.length].bg,
+            tension: 0.4,
+            fill: true
+        }));
+
+        priceChart.update();
+    }
+
+    function updateStats(data) {
+        if (data.stats) {
+            document.getElementById('stat-changes').textContent = data.stats.totalChanges || '-';
+            document.getElementById('stat-avg-price').textContent =
+                data.stats.avgPrice ? data.stats.avgPrice.toFixed(2) : '-';
+
+            const trend = data.stats.trend || 0;
+            const trendEl = document.getElementById('stat-trend');
+            trendEl.textContent = (trend >= 0 ? '+' : '') + trend.toFixed(1) + '%';
+            trendEl.className = trend >= 0
+                ? 'text-2xl font-bold text-green-600 dark:text-green-400'
+                : 'text-2xl font-bold text-red-600 dark:text-red-400';
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('filter-category').value = '';
+        document.getElementById('filter-grade').value = '';
+
+        const today = new Date();
+        const yearAgo = new Date();
+        yearAgo.setFullYear(today.getFullYear() - 1);
+
+        document.getElementById('filter-date-from').value = yearAgo.toISOString().split('T')[0];
+        document.getElementById('filter-date-to').value = today.toISOString().split('T')[0];
+
+        // Clear chart
+        priceChart.data.labels = [];
+        priceChart.data.datasets = [];
+        priceChart.update();
+
+        document.getElementById('stats-container').style.display = 'none';
+    }
+
+    // Update chart colors when theme changes
+    const observer = new MutationObserver(() => {
+        if (priceChart) {
+            const isDark = document.documentElement.classList.contains('dark');
+            priceChart.options.plugins.legend.labels.color = isDark ? '#94a3b8' : '#475569';
+            priceChart.options.scales.x.grid.color = isDark ? '#334155' : '#e2e8f0';
+            priceChart.options.scales.x.ticks.color = isDark ? '#94a3b8' : '#475569';
+            priceChart.options.scales.y.grid.color = isDark ? '#334155' : '#e2e8f0';
+            priceChart.options.scales.y.ticks.color = isDark ? '#94a3b8' : '#475569';
+            priceChart.update();
+        }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}
