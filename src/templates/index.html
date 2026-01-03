@@ -136,30 +136,71 @@
                         <p class="text-xs text-steel-500 dark:text-steel-400 font-medium mb-3">Obrobka dodatkowa</p>
                     </div>
 
-                    <!-- Grinding -->
+                    <!-- Grinding Provider -->
                     <div>
                         <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
-                            Szlif
+                            Szlifiernia
                         </label>
-                        <select name="grinding"
+                        <select name="grinding_provider" id="grinding-provider"
+                                onchange="updateGritOptions()"
                                 class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
                             <option value="">Bez szlifu</option>
-                            <option value="jednostronnie">Jednostronnie</option>
-                            <option value="dwustronnie">Dwustronnie</option>
+                            <option value="CAMU">CAMU</option>
+                            <option value="BABCIA">BABCIA</option>
+                            <option value="BORYS">BORYS</option>
+                            <option value="COSTA">COSTA</option>
                         </select>
                     </div>
 
-                    <!-- Film -->
+                    <!-- Grinding Grit -->
+                    <div id="grit-section" class="hidden">
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                            Granulacja
+                        </label>
+                        <select name="grinding_grit" id="grinding-grit"
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                            <option value="">Wybierz granulacje</option>
+                            <option value="K80/K120">K80/K120 (gruby)</option>
+                            <option value="K240/K180">K240/K180 (sredni)</option>
+                            <option value="K320/K400">K320/K400 (drobny)</option>
+                        </select>
+                    </div>
+
+                    <!-- Grinding Double-sided -->
+                    <div id="grinding-double-section" class="hidden">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="grinding_double"
+                                   class="rounded border-steel-300 dark:border-steel-600 text-primary-600 focus:ring-primary-500">
+                            <span class="text-sm text-steel-700 dark:text-steel-300">Szlif dwustronnie</span>
+                        </label>
+                    </div>
+
+                    <!-- Film Type -->
                     <div>
                         <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
                             Folia ochronna
                         </label>
-                        <select name="film"
+                        <select name="film_type" id="film-type"
+                                onchange="toggleFilmDouble()"
                                 class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
                             <option value="">Bez folii</option>
-                            <option value="jednostronnie">Jednostronnie</option>
-                            <option value="dwustronnie">Dwustronnie</option>
+                            <option value="FOLIA_ZWYKLA">Folia zwykla (FZ)</option>
+                            <option value="FOLIA_FIBER">Folia fiber (FF)</option>
+                            <option value="Novacel 4228">Novacel 4228</option>
+                            <option value="Nitto 3100">Nitto 3100</option>
+                            <option value="Nitto 3067M">Nitto 3067M</option>
+                            <option value="NITTO AFP585">NITTO AFP585</option>
+                            <option value="NITTO 224PR">NITTO 224PR</option>
                         </select>
+                    </div>
+
+                    <!-- Film Double-sided -->
+                    <div id="film-double-section" class="hidden">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="film_double"
+                                   class="rounded border-steel-300 dark:border-steel-600 text-primary-600 focus:ring-primary-500">
+                            <span class="text-sm text-steel-700 dark:text-steel-300">Folia dwustronnie</span>
+                        </label>
                     </div>
 
                     <!-- Submit Button -->
@@ -227,11 +268,14 @@
                                 <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
                                     PLN/m2
                                 </th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                                    PLN/arkusz
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-steel-800 divide-y divide-steel-200 dark:divide-steel-700">
                             <tr>
-                                <td colspan="7" class="px-4 py-12 text-center">
+                                <td colspan="8" class="px-4 py-12 text-center">
                                     <div class="flex flex-col items-center">
                                         <div class="w-12 h-12 rounded-full bg-steel-100 dark:bg-steel-700 flex items-center justify-center mb-3">
                                             <svg class="w-6 h-6 text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,5 +306,43 @@ function toggleDimensions() {
         dimensionsSection.classList.add('hidden');
     }
 }
+
+function updateGritOptions() {
+    const provider = document.getElementById('grinding-provider').value;
+    const gritSection = document.getElementById('grit-section');
+    const grindingDoubleSection = document.getElementById('grinding-double-section');
+
+    if (provider && provider !== 'BORYS') {
+        // CAMU, BABCIA, COSTA - maja granulacje
+        gritSection.classList.remove('hidden');
+        grindingDoubleSection.classList.remove('hidden');
+    } else if (provider === 'BORYS') {
+        // BORYS - nie ma granulacji
+        gritSection.classList.add('hidden');
+        grindingDoubleSection.classList.remove('hidden');
+    } else {
+        // Brak szlifu
+        gritSection.classList.add('hidden');
+        grindingDoubleSection.classList.add('hidden');
+    }
+}
+
+function toggleFilmDouble() {
+    const filmType = document.getElementById('film-type').value;
+    const filmDoubleSection = document.getElementById('film-double-section');
+
+    if (filmType) {
+        filmDoubleSection.classList.remove('hidden');
+    } else {
+        filmDoubleSection.classList.add('hidden');
+    }
+}
+
+// Inicjalizacja po zaladowaniu strony
+document.addEventListener('DOMContentLoaded', function() {
+    updateGritOptions();
+    toggleFilmDouble();
+    toggleDimensions();
+});
 </script>
 {% endblock %}

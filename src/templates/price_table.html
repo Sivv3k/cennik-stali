@@ -26,6 +26,9 @@
             <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
                 PLN/m2
             </th>
+            <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                PLN/arkusz
+            </th>
         </tr>
     </thead>
     <tbody class="bg-white dark:bg-steel-800 divide-y divide-steel-200 dark:divide-steel-700">
@@ -102,10 +105,19 @@
                     <span class="text-steel-400 font-normal">-</span>
                 {% endif %}
             </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                {% if row.sheet_price %}
+                    <div class="font-bold text-green-600 dark:text-green-400">
+                        {{ "%.2f"|format(row.sheet_price) }}
+                    </div>
+                {% else %}
+                    <span class="text-steel-400 font-normal">-</span>
+                {% endif %}
+            </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="8" class="px-4 py-12 text-center">
+            <td colspan="9" class="px-4 py-12 text-center">
                 <div class="flex flex-col items-center">
                     <div class="w-12 h-12 rounded-full bg-steel-100 dark:bg-steel-700 flex items-center justify-center mb-3">
                         <svg class="w-6 h-6 text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
