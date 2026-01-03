@@ -2,20 +2,20 @@ version: '3.8'
 
 services:
   cennik-stali:
-    build: .
+    build:
+      context: ../../
+      dockerfile: deploy/cennik/Dockerfile
     container_name: cennik-stali
     restart: unless-stopped
     ports:
       - "23456:8000"
     volumes:
-      - /volume2/docker/cennik/data:/app/data
+      - cennik-data:/app/data
     environment:
       - APP_NAME=Cennik BTH
       - DEBUG=false
-      - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL}
-    env_file:
-      - .env
+      - SECRET_KEY=${SECRET_KEY:-zmien_ten_klucz_na_losowy_32_znaki}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://cennik_user:dupajaswegierskiszlachcic@172.16.10.201:2665/cennik_stali}
     networks:
       - si_br
     healthcheck:
@@ -24,6 +24,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  cennik-data:
 
 networks:
   si_br:
