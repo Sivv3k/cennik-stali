@@ -19,15 +19,22 @@ templates = Jinja2Templates(directory="src/templates")
 @router.get("/", response_class=HTMLResponse)
 async def list_prices_html(
     request: Request,
-    category: Optional[str] = Query(None),
-    grade: Optional[str] = Query(None),
-    source_type: Optional[str] = Query(None),
-    thickness: Optional[float] = Query(None),
-    surface: Optional[str] = Query(None),
+    category: Optional[str] = Query(""),
+    grade: Optional[str] = Query(""),
+    source_type: Optional[str] = Query(""),
+    thickness: Optional[str] = Query(""),
+    surface: Optional[str] = Query(""),
     limit: int = Query(100, le=500),
     db: Session = Depends(get_db),
 ):
     """Pobierz liste cen jako HTML (dla HTMX)."""
+    # Konwertuj puste stringi na None
+    category = category if category else None
+    grade = grade if grade else None
+    source_type = source_type if source_type else None
+    surface = surface if surface else None
+    thickness_val = float(thickness) if thickness else None
+
     query = db.query(BasePrice).options(joinedload(BasePrice.material)).filter(BasePrice.is_active == True)
 
     # Filtrowanie po kategorii materialu
@@ -41,8 +48,8 @@ async def list_prices_html(
         query = query.filter(Material.grade == grade)
 
     # Filtrowanie po grubosci
-    if thickness:
-        query = query.filter(BasePrice.thickness == thickness)
+    if thickness_val:
+        query = query.filter(BasePrice.thickness == thickness_val)
 
     # Filtrowanie po powierzchni
     if surface:
