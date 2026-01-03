@@ -14,8 +14,8 @@ services:
     environment:
       - APP_NAME=Cennik BTH
       - DEBUG=false
-      - SECRET_KEY=${SECRET_KEY:-zmien_ten_klucz_na_losowy_32_znaki}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://cennik_user:dupajaswegierskiszlachcic@172.16.10.201:2665/cennik_stali}
+      - SECRET_KEY
+      - DATABASE_URL
     networks:
       - si_br
     healthcheck:
