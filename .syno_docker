@@ -9,13 +9,13 @@ POSTGRES_HOST=172.16.10.201
 POSTGRES_PORT=2665
 POSTGRES_DB=cennik_stali
 POSTGRES_USER=cennik_user
-POSTGRES_PASSWORD=silne_haslo_123
-DATABASE_URL=postgresql://cennik_user:silne_haslo_123@172.16.10.201:2665/cennik_stali
+POSTGRES_PASSWORD=dupajaswegierskiszlachcic
+DATABASE_URL=postgresql://cennik_user:dupajaswegierskiszlachcic@172.16.10.201:2665/cennik_stali
 
-# Aplikacja
-APP_NAME="Cennik Stali BTH Impost"
-APP_PORT=8080
+# Aplikacja 
+APP_NAME="Cennik BTH"
+APP_PORT=23456
 CONTAINER_NAME=cennik-stali
 
 # Siec Docker
-DOCKER_NETWORK=proxy
+DOCKER_NETWORK=si_br

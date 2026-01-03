@@ -6,18 +6,18 @@ services:
     container_name: cennik-stali
     restart: unless-stopped
     ports:
-      - "8080:8000"
+      - "23456:8000"
     volumes:
       - /volume2/docker/cennik/data:/app/data
     environment:
-      - APP_NAME=Cennik Stali BTH Impost
+      - APP_NAME=Cennik BTH
       - DEBUG=false
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
     env_file:
       - .env
     networks:
-      - proxy
+      - si_br
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -26,5 +26,5 @@ services:
       start_period: 40s
 
 networks:
-  proxy:
+  si_br:
     external: true
