@@ -36,6 +36,18 @@ from .surface import Surface, SurfaceType, Finish
 
 from .user import User, UserRole, ApiKey
 
+from .machine import (
+    MachineType,
+    OperationType,
+    MachinePrice,
+    MACHINE_LIMITS,
+    SOURCE_WIDTHS,
+    get_available_machines,
+    can_do_multiblanking,
+    optimize_source_width,
+    calculate_all_source_options,
+)
+
 __all__ = [
     # Material
     "Material",
@@ -71,4 +83,14 @@ __all__ = [
     "User",
     "UserRole",
     "ApiKey",
+    # Machine
+    "MachineType",
+    "OperationType",
+    "MachinePrice",
+    "MACHINE_LIMITS",
+    "SOURCE_WIDTHS",
+    "get_available_machines",
+    "can_do_multiblanking",
+    "optimize_source_width",
+    "calculate_all_source_options",
 ]

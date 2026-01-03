@@ -19,6 +19,9 @@ from ..models import (
     MaterialGroup,
     MaterialCategory,
     SurfaceFinish,
+    MachinePrice,
+    MachineType,
+    OperationType,
 )
 from ..models.price import BasePrice
 from ..auth.dependencies import get_current_user
@@ -1906,4 +1909,163 @@ async def get_price_history(
             "avgPrice": round(avg_price, 2),
             "trend": round(trend, 1),
         }
+    }
+
+
+# === Machine Price Endpoints ===
+
+@router.get("/machine-prices/matrix/{machine}/{operation}")
+async def get_machine_price_matrix(
+    machine: MachineType,
+    operation: OperationType,
+    db: Session = Depends(get_db),
+):
+    """Pobierz matrycę cen maszyny (grubosc -> cena)."""
+    prices = db.query(MachinePrice).filter(
+        MachinePrice.machine_type == machine,
+        MachinePrice.operation_type == operation,
+        MachinePrice.is_active == True,
+    ).order_by(MachinePrice.thickness).all()
+
+    thicknesses = []
+    price_list = []
+
+    for p in prices:
+        thicknesses.append(p.thickness)
+        price_list.append({
+            "id": p.id,
+            "thickness": p.thickness,
+            "surcharge": p.surcharge_pln_per_kg,
+        })
+
+    return {
+        "machine": machine.value,
+        "operation": operation.value,
+        "thicknesses": thicknesses,
+        "prices": price_list,
+    }
+
+
+@router.post("/machine-prices")
+async def create_machine_price(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Utworz nowa cene maszyny."""
+    machine_type = MachineType(data["machine_type"])
+    operation_type = OperationType(data["operation_type"])
+    thickness = float(data["thickness"])
+    surcharge = float(data.get("surcharge_pln_per_kg", 0))
+
+    # Sprawdz czy juz istnieje
+    existing = db.query(MachinePrice).filter(
+        MachinePrice.machine_type == machine_type,
+        MachinePrice.operation_type == operation_type,
+        MachinePrice.thickness == thickness,
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cena dla {machine_type.value} {operation_type.value} {thickness}mm juz istnieje"
+        )
+
+    price = MachinePrice(
+        machine_type=machine_type,
+        operation_type=operation_type,
+        thickness=thickness,
+        surcharge_pln_per_kg=surcharge,
+        is_active=True,
+    )
+    db.add(price)
+    db.commit()
+    db.refresh(price)
+
+    return {
+        "id": price.id,
+        "machine_type": price.machine_type.value,
+        "operation_type": price.operation_type.value,
+        "thickness": price.thickness,
+        "surcharge": price.surcharge_pln_per_kg,
+    }
+
+
+@router.put("/machine-prices/{price_id}")
+async def update_machine_price(
+    price_id: int,
+    surcharge: float = Query(..., description="Doplata PLN/kg"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Aktualizuj cene maszyny."""
+    price = db.query(MachinePrice).filter(MachinePrice.id == price_id).first()
+
+    if not price:
+        raise HTTPException(status_code=404, detail="Cena nie znaleziona")
+
+    price.surcharge_pln_per_kg = surcharge
+    db.commit()
+
+    return {
+        "id": price.id,
+        "surcharge": price.surcharge_pln_per_kg,
+    }
+
+
+@router.delete("/machine-prices/{price_id}", status_code=204)
+async def delete_machine_price(
+    price_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Usun cene maszyny."""
+    price = db.query(MachinePrice).filter(MachinePrice.id == price_id).first()
+
+    if not price:
+        raise HTTPException(status_code=404, detail="Cena nie znaleziona")
+
+    db.delete(price)
+    db.commit()
+
+
+@router.post("/machine-prices/init")
+async def init_machine_prices(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Inicjalizuj matrycę cen maszyny z domyslnymi grubosciami."""
+    machine_type = MachineType(data["machine_type"])
+    operation_type = OperationType(data["operation_type"])
+    thicknesses = data.get("thicknesses", [])
+    default_surcharge = float(data.get("default_surcharge", 0.50))
+
+    created = 0
+    for thickness in thicknesses:
+        existing = db.query(MachinePrice).filter(
+            MachinePrice.machine_type == machine_type,
+            MachinePrice.operation_type == operation_type,
+            MachinePrice.thickness == thickness,
+        ).first()
+
+        if existing:
+            continue
+
+        price = MachinePrice(
+            machine_type=machine_type,
+            operation_type=operation_type,
+            thickness=thickness,
+            surcharge_pln_per_kg=default_surcharge,
+            is_active=True,
+        )
+        db.add(price)
+        created += 1
+
+    db.commit()
+
+    return {
+        "machine_type": machine_type.value,
+        "operation_type": operation_type.value,
+        "created": created,
     }

@@ -177,6 +177,19 @@ async def admin_history(request: Request, user: User = Depends(require_admin)):
     )
 
 
+@app.get("/admin/machines", response_class=HTMLResponse)
+async def admin_machines(request: Request, user: User = Depends(require_admin)):
+    """Panel administracyjny - maszyny CTL/Multiblanking."""
+    return templates.TemplateResponse(
+        "admin/machine_matrix.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Maszyny",
+            "user": user,
+        },
+    )
+
+
 @app.get("/health")
 async def health_check():
     """Endpoint do sprawdzania stanu aplikacji."""

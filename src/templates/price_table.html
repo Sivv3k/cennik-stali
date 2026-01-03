@@ -2,113 +2,130 @@
 <table class="min-w-full divide-y divide-steel-200 dark:divide-steel-700">
     <thead class="bg-steel-50 dark:bg-steel-900">
         <tr>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                Material
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+            <th class="px-3 py-2 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
                 Gatunek
             </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                Grubosc
+            <th class="px-3 py-2 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                Wymiar (mm)
             </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                Wymiary
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                Powierzchnia
-            </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+            <th class="px-3 py-2 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
                 Obrobka
             </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+            <th class="px-3 py-2 text-center text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider w-20">
+                Ilosc
+            </th>
+            <th class="px-3 py-2 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
                 PLN/kg
             </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+            <th class="px-3 py-2 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
                 PLN/m2
             </th>
-            <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                PLN/arkusz
+            <th class="px-3 py-2 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                PLN/szt
+            </th>
+            <th class="px-3 py-2 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                PLN razem
             </th>
         </tr>
     </thead>
     <tbody class="bg-white dark:bg-steel-800 divide-y divide-steel-200 dark:divide-steel-700">
         {% for row in prices %}
         <tr class="hover:bg-steel-50 dark:hover:bg-steel-700/50 transition-colors">
-            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-steel-900 dark:text-steel-100">
-                {{ row.material_name }}
+            <!-- Gatunek + Powierzchnia -->
+            <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-steel-900 dark:text-steel-100">
+                {{ row.grade_surface }}
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-steel-600 dark:text-steel-400">
-                {{ row.grade }}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-steel-600 dark:text-steel-400">
-                {{ row.thickness }} mm
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-steel-600 dark:text-steel-400">
-                {% if row.width and row.length %}
-                    {{ row.width|int }} x {{ row.length|int }} mm
-                {% elif row.width %}
-                    szer. {{ row.width|int }} mm
+
+            <!-- Wymiar: grubosc x szerokosc x dlugosc -->
+            <td class="px-3 py-2 whitespace-nowrap text-sm text-steel-600 dark:text-steel-400">
+                {% if row.dimension %}
+                    {{ row.dimension }}
                 {% else %}
                     -
                 {% endif %}
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-steel-600 dark:text-steel-400">
-                {{ row.surface_type or '-' }}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm">
+
+            <!-- Obrobka - badges -->
+            <td class="px-3 py-2 whitespace-nowrap text-sm">
                 <div class="flex flex-wrap gap-1">
-                    {% if row.source_type and row.source_type != 'arkusz' %}
-                    <span class="px-1.5 py-0.5 text-xs font-medium rounded
-                        {% if row.source_type == 'CTL' %}
-                            bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300
-                        {% else %}
-                            bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300
-                        {% endif %}">
-                        {{ row.source_type }}
+                    {% if row.machine_label %}
+                    <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                        {{ row.machine_label }}
                     </span>
                     {% endif %}
-                    {% if row.grinding %}
+                    {% if row.grinding_label %}
                     <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
-                        Szlif {{ row.grinding }}
+                        {{ row.grinding_label }}
                     </span>
                     {% endif %}
-                    {% if row.film %}
+                    {% if row.film_label %}
                     <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                        Folia {{ row.film }}
+                        {{ row.film_label }}
                     </span>
                     {% endif %}
-                    {% if not row.grinding and not row.film and (not row.source_type or row.source_type == 'arkusz') %}
+                    {% if not row.machine_label and not row.grinding_label and not row.film_label %}
                     <span class="text-steel-400">-</span>
                     {% endif %}
                 </div>
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+
+            <!-- Ilosc - input -->
+            <td class="px-3 py-2 whitespace-nowrap text-sm text-center">
+                <input type="number"
+                       value="{{ row.quantity }}"
+                       min="1"
+                       class="quantity-input w-16 text-center rounded border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1 text-sm"
+                       data-unit-price="{{ row.sheet_price or 0 }}"
+                       onchange="updateRowTotal(this)">
+            </td>
+
+            <!-- PLN/kg -->
+            <td class="px-3 py-2 whitespace-nowrap text-sm text-right">
                 {% if row.price_per_kg %}
-                    <div class="font-semibold text-steel-900 dark:text-steel-100">
+                    <div class="font-medium text-steel-900 dark:text-steel-100">
                         {{ "%.2f"|format(row.price_per_kg) }}
                     </div>
-                    {% if row.grinding_cost > 0 or row.film_cost > 0 %}
-                    <div class="text-xs text-steel-500">
-                        {% if row.base_price_kg %}baza {{ "%.2f"|format(row.base_price_kg) }}{% endif %}
-                        {% if row.grinding_cost > 0 %}+szlif {{ "%.2f"|format(row.grinding_cost) }}{% endif %}
-                        {% if row.film_cost > 0 %}+folia {{ "%.2f"|format(row.film_cost) }}{% endif %}
+                    {% if row.machine_cost > 0 or row.grinding_cost > 0 or row.film_cost > 0 %}
+                    <div class="text-xs text-steel-500" title="Skladniki ceny">
+                        {{ "%.2f"|format(row.base_price_kg) }}
+                        {% if row.machine_cost > 0 %}+{{ "%.2f"|format(row.machine_cost) }}{% endif %}
+                        {% if row.grinding_cost > 0 %}+{{ "%.2f"|format(row.grinding_cost) }}{% endif %}
+                        {% if row.film_cost > 0 %}+{{ "%.2f"|format(row.film_cost) }}{% endif %}
                     </div>
                     {% endif %}
                 {% else %}
                     <span class="text-steel-400">-</span>
                 {% endif %}
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-semibold text-steel-900 dark:text-steel-100">
+
+            <!-- PLN/m2 -->
+            <td class="px-3 py-2 whitespace-nowrap text-sm text-right text-steel-600 dark:text-steel-400">
                 {% if row.price_per_m2 %}
                     {{ "%.2f"|format(row.price_per_m2) }}
+                {% else %}
+                    <span class="text-steel-400">-</span>
+                {% endif %}
+            </td>
+
+            <!-- PLN/szt -->
+            <td class="px-3 py-2 whitespace-nowrap text-sm text-right font-medium text-steel-900 dark:text-steel-100">
+                {% if row.sheet_price %}
+                    {{ "%.2f"|format(row.sheet_price) }}
+                    {% if row.pieces_per_sheet > 1 %}
+                    <div class="text-xs text-steel-500">
+                        ({{ row.pieces_per_sheet }} szt/ark)
+                    </div>
+                    {% endif %}
                 {% else %}
                     <span class="text-steel-400 font-normal">-</span>
                 {% endif %}
             </td>
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
-                {% if row.sheet_price %}
-                    <div class="font-bold text-green-600 dark:text-green-400">
-                        {{ "%.2f"|format(row.sheet_price) }}
+
+            <!-- PLN razem -->
+            <td class="px-3 py-2 whitespace-nowrap text-sm text-right">
+                {% if row.total_price %}
+                    <div class="row-total font-bold text-green-600 dark:text-green-400 text-base">
+                        {{ "%.2f"|format(row.total_price) }}
                     </div>
                 {% else %}
                     <span class="text-steel-400 font-normal">-</span>
@@ -117,7 +134,7 @@
         </tr>
         {% else %}
         <tr>
-            <td colspan="9" class="px-4 py-12 text-center">
+            <td colspan="8" class="px-4 py-12 text-center">
                 <div class="flex flex-col items-center">
                     <div class="w-12 h-12 rounded-full bg-steel-100 dark:bg-steel-700 flex items-center justify-center mb-3">
                         <svg class="w-6 h-6 text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,10 +151,35 @@
 </table>
 
 {% if prices %}
-<div class="px-4 py-3 bg-steel-50 dark:bg-steel-900 border-t border-steel-200 dark:border-steel-700 text-xs text-steel-500 dark:text-steel-400">
-    Znaleziono {{ prices|length }} pozycji
-    {% if prices[0].grinding or prices[0].film %}
-    | Ceny zawieraja koszty obrobki dodatkowej
-    {% endif %}
+<div class="px-4 py-3 bg-steel-50 dark:bg-steel-900 border-t border-steel-200 dark:border-steel-700">
+    <div class="flex justify-between items-center text-sm">
+        <div class="text-steel-500 dark:text-steel-400">
+            Znaleziono {{ prices|length }} pozycji
+        </div>
+        {% if is_multiblanking and prices[0].optimization %}
+        <div class="text-steel-600 dark:text-steel-300">
+            <span class="font-medium">Optymalizacja:</span>
+            zrodlo {{ prices[0].optimization.source_width }}mm
+            → {{ prices[0].optimization.pieces }} szt/arkusz
+            ({{ prices[0].optimization.utilization }}% wykorzystania,
+            odpad {{ prices[0].optimization.waste_mm }}mm wliczony w cene)
+        </div>
+        {% endif %}
+    </div>
 </div>
 {% endif %}
+
+<script>
+function updateRowTotal(input) {
+    const unitPrice = parseFloat(input.dataset.unitPrice) || 0;
+    const quantity = parseInt(input.value) || 1;
+    const total = unitPrice * quantity;
+
+    // Znajdz komorke z suma w tym samym wierszu
+    const row = input.closest('tr');
+    const totalCell = row.querySelector('.row-total');
+    if (totalCell && unitPrice > 0) {
+        totalCell.textContent = total.toFixed(2);
+    }
+}
+</script>

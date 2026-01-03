@@ -3,37 +3,38 @@
 {% block title %}{{ title }} - Kalkulator Cen{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <!-- Page Header -->
-    <div class="mb-8">
+    <div class="mb-6">
         <h1 class="text-2xl font-bold">Kalkulator <span class="bth-red">cennika</span></h1>
-        <p class="text-steel-600 dark:text-steel-400 mt-1">
+        <p class="text-steel-600 dark:text-steel-400 mt-1 text-sm">
             Oblicz cene materialow z uwzglednieniem wszystkich parametrow.
         </p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Filters Panel -->
-        <div class="lg:col-span-1">
-            <div class="bg-white dark:bg-steel-800 rounded-xl border border-steel-200 dark:border-steel-700 p-5 sticky top-20">
-                <h2 class="text-base font-semibold mb-4 flex items-center">
-                    <svg class="w-5 h-5 mr-2 bth-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="flex gap-6">
+        <!-- Filters Panel - Narrower -->
+        <div class="w-72 flex-shrink-0">
+            <div class="bg-white dark:bg-steel-800 rounded-xl border border-steel-200 dark:border-steel-700 p-4 sticky top-20">
+                <h2 class="text-sm font-semibold mb-4 flex items-center">
+                    <svg class="w-4 h-4 mr-2 bth-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                     </svg>
                     Filtry
                 </h2>
 
                 <form hx-get="/api/prices/" hx-target="#price-table" hx-swap="innerHTML" hx-indicator="#loading"
-                      class="space-y-4" id="price-form">
+                      class="space-y-3" id="price-form">
 
                     <!-- Category -->
                     <div>
-                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
                             Kategoria
                         </label>
-                        <select name="category"
-                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
-                            <option value="">Wszystkie kategorie</option>
+                        <select name="category" id="filter-category"
+                                hx-get="/api/prices/filter-options/" hx-target="#filter-options-data" hx-trigger="change"
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
+                            <option value="">Wszystkie</option>
                             <option value="stal_nierdzewna">Stal nierdzewna</option>
                             <option value="stal_czarna">Stal czarna</option>
                             <option value="aluminium">Aluminium</option>
@@ -42,108 +43,126 @@
 
                     <!-- Grade -->
                     <div>
-                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
                             Gatunek
                         </label>
-                        <select name="grade"
-                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
-                            <option value="">Wszystkie gatunki</option>
+                        <select name="grade" id="filter-grade"
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
+                            <option value="">Wszystkie</option>
                             <optgroup label="Stal nierdzewna">
-                                <option value="304">304</option>
-                                <option value="304L">304L</option>
-                                <option value="316">316</option>
-                                <option value="316L">316L</option>
-                                <option value="430">430</option>
+                                <option value="304">304 / 1.4301</option>
+                                <option value="304L">304L / 1.4307</option>
+                                <option value="316">316 / 1.4401</option>
+                                <option value="316L">316L / 1.4404</option>
+                                <option value="430">430 / 1.4016</option>
                             </optgroup>
                             <optgroup label="Stal czarna">
                                 <option value="DC01">DC01</option>
                                 <option value="DC03">DC03</option>
-                                <option value="DC04">DC04</option>
                                 <option value="S235">S235</option>
                                 <option value="S355">S355</option>
-                            </optgroup>
-                            <optgroup label="Aluminium">
-                                <option value="1050">1050</option>
-                                <option value="5754">5754</option>
-                                <option value="5083">5083</option>
-                                <option value="6061">6061</option>
                             </optgroup>
                         </select>
                     </div>
 
                     <!-- Surface -->
                     <div>
-                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
                             Powierzchnia
                         </label>
-                        <select name="surface"
-                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                        <select name="surface" id="filter-surface"
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
                             <option value="">Wszystkie</option>
                             <option value="2B">2B</option>
-                            <option value="BA">BA (Bright Annealed)</option>
-                            <option value="No.4">No.4 (Szczotkowana)</option>
-                            <option value="HL">HL (Hairline)</option>
-                            <option value="mirror">Mirror (Lustro)</option>
+                            <option value="BA">BA</option>
+                            <option value="No.4">No.4</option>
+                            <option value="HL">HL</option>
                         </select>
                     </div>
 
                     <!-- Thickness -->
                     <div>
-                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
                             Grubosc (mm)
                         </label>
-                        <input type="number" name="thickness" step="0.1" placeholder="np. 1.5"
-                               class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                        <input type="number" name="thickness" id="filter-thickness" step="0.1" placeholder="np. 1.5"
+                               onchange="updateMachineOptions()"
+                               class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
                     </div>
 
-                    <!-- Source Type -->
+                    <!-- Divider: Maszyna -->
+                    <div class="border-t border-steel-200 dark:border-steel-700 pt-3">
+                        <p class="text-xs text-steel-500 dark:text-steel-400 font-medium mb-2">Maszyna / Operacja</p>
+                    </div>
+
+                    <!-- Machine -->
                     <div>
-                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
-                            Zrodlo materialu
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Maszyna
                         </label>
-                        <select name="source_type" id="source-type"
-                                onchange="toggleDimensions()"
-                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
-                            <option value="">Arkusz standardowy</option>
-                            <option value="CTL">CTL (Cut To Length)</option>
-                            <option value="multiblanking">Multiblanking</option>
+                        <select name="machine" id="filter-machine"
+                                onchange="updateOperationOptions()"
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
+                            <option value="">Brak (arkusz std)</option>
+                            <option value="RBI">RBI (do 3mm, 1500mm)</option>
+                            <option value="ATH">ATH (do 12mm, 2000mm)</option>
                         </select>
                     </div>
 
-                    <!-- Dimensions (shown only for CTL/Multiblanking) -->
-                    <div id="dimensions-section" class="hidden space-y-4 p-3 bg-steel-50 dark:bg-steel-900 rounded-lg border border-steel-200 dark:border-steel-700">
+                    <!-- Operation -->
+                    <div id="operation-section" class="hidden">
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Operacja
+                        </label>
+                        <select name="operation" id="filter-operation"
+                                onchange="toggleMultiblankingFields()"
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
+                            <option value="CTL">CTL (ciecie na dlugosc)</option>
+                            <option value="MULTIBLANKING">Multiblanking</option>
+                        </select>
+                    </div>
+
+                    <!-- Dimensions -->
+                    <div id="dimensions-section" class="hidden space-y-2 p-2 bg-steel-50 dark:bg-steel-900 rounded-lg border border-steel-200 dark:border-steel-700">
                         <p class="text-xs text-steel-500 dark:text-steel-400 font-medium">Wymiary arkusza</p>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-xs text-steel-600 dark:text-steel-400 mb-1">
-                                    Szerokosc (mm)
-                                </label>
-                                <input type="number" name="width" step="1" placeholder="np. 1000"
-                                       class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                                <label class="block text-xs text-steel-600 dark:text-steel-400 mb-0.5">Szer. (mm)</label>
+                                <input type="number" name="width" id="filter-width" step="1" placeholder="1000"
+                                       class="w-full rounded border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 py-1 text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs text-steel-600 dark:text-steel-400 mb-1">
-                                    Dlugosc (mm)
-                                </label>
-                                <input type="number" name="length" step="1" placeholder="np. 2000"
-                                       class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                                <label class="block text-xs text-steel-600 dark:text-steel-400 mb-0.5">Dl. (mm)</label>
+                                <input type="number" name="length" id="filter-length" step="1" placeholder="2000"
+                                       class="w-full rounded border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 py-1 text-sm">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Divider -->
-                    <div class="border-t border-steel-200 dark:border-steel-700 pt-4">
-                        <p class="text-xs text-steel-500 dark:text-steel-400 font-medium mb-3">Obrobka dodatkowa</p>
+                    <!-- Multiblanking target width -->
+                    <div id="multiblanking-section" class="hidden space-y-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">Multiblanking - wymiar docelowy</p>
+                        <div>
+                            <label class="block text-xs text-blue-600 dark:text-blue-400 mb-0.5">Szer. docelowa (mm)</label>
+                            <input type="number" name="target_width" id="filter-target-width" step="1" placeholder="np. 220"
+                                   class="w-full rounded border-blue-300 dark:border-blue-700 bg-white dark:bg-steel-800 text-steel-900 dark:text-steel-100 py-1 text-sm">
+                        </div>
+                        <p class="text-xs text-blue-500">System dobierze optymalna szerokosc zrodlowa</p>
                     </div>
 
-                    <!-- Grinding Provider -->
+                    <!-- Divider: Obrobka -->
+                    <div class="border-t border-steel-200 dark:border-steel-700 pt-3">
+                        <p class="text-xs text-steel-500 dark:text-steel-400 font-medium mb-2">Obrobka dodatkowa</p>
+                    </div>
+
+                    <!-- Grinding -->
                     <div>
-                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
                             Szlifiernia
                         </label>
                         <select name="grinding_provider" id="grinding-provider"
                                 onchange="updateGritOptions()"
-                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
                             <option value="">Bez szlifu</option>
                             <option value="CAMU">CAMU</option>
                             <option value="BABCIA">BABCIA</option>
@@ -154,80 +173,85 @@
 
                     <!-- Grinding Grit -->
                     <div id="grit-section" class="hidden">
-                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
                             Granulacja
                         </label>
                         <select name="grinding_grit" id="grinding-grit"
-                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
-                            <option value="">Wybierz granulacje</option>
-                            <option value="K80/K120">K80/K120 (gruby)</option>
-                            <option value="K240/K180">K240/K180 (sredni)</option>
-                            <option value="K320/K400">K320/K400 (drobny)</option>
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
+                            <option value="">Wybierz</option>
+                            <option value="K80/K120">K80/K120</option>
+                            <option value="K240/K180">K240/K180</option>
+                            <option value="K320/K400">K320/K400</option>
                         </select>
                     </div>
 
-                    <!-- Grinding Double-sided -->
+                    <!-- Grinding double -->
                     <div id="grinding-double-section" class="hidden">
                         <label class="flex items-center space-x-2 cursor-pointer">
                             <input type="checkbox" name="grinding_double"
                                    class="rounded border-steel-300 dark:border-steel-600 text-primary-600 focus:ring-primary-500">
-                            <span class="text-sm text-steel-700 dark:text-steel-300">Szlif dwustronnie</span>
+                            <span class="text-xs text-steel-700 dark:text-steel-300">Szlif dwustronnie</span>
                         </label>
                     </div>
 
-                    <!-- Film Type -->
+                    <!-- Film -->
                     <div>
-                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-1.5">
-                            Folia ochronna
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Folia
                         </label>
                         <select name="film_type" id="film-type"
                                 onchange="toggleFilmDouble()"
-                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2 text-sm">
+                                class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
                             <option value="">Bez folii</option>
-                            <option value="FOLIA_ZWYKLA">Folia zwykla (FZ)</option>
-                            <option value="FOLIA_FIBER">Folia fiber (FF)</option>
+                            <option value="FOLIA_ZWYKLA">Folia zwykla</option>
+                            <option value="FOLIA_FIBER">Folia fiber</option>
                             <option value="Novacel 4228">Novacel 4228</option>
                             <option value="Nitto 3100">Nitto 3100</option>
-                            <option value="Nitto 3067M">Nitto 3067M</option>
-                            <option value="NITTO AFP585">NITTO AFP585</option>
-                            <option value="NITTO 224PR">NITTO 224PR</option>
                         </select>
                     </div>
 
-                    <!-- Film Double-sided -->
+                    <!-- Film double -->
                     <div id="film-double-section" class="hidden">
                         <label class="flex items-center space-x-2 cursor-pointer">
                             <input type="checkbox" name="film_double"
                                    class="rounded border-steel-300 dark:border-steel-600 text-primary-600 focus:ring-primary-500">
-                            <span class="text-sm text-steel-700 dark:text-steel-300">Folia dwustronnie</span>
+                            <span class="text-xs text-steel-700 dark:text-steel-300">Folia dwustronnie</span>
                         </label>
                     </div>
 
-                    <!-- Submit Button -->
+                    <!-- Divider: Ilosc -->
+                    <div class="border-t border-steel-200 dark:border-steel-700 pt-3">
+                        <label class="block text-xs font-medium text-steel-700 dark:text-steel-300 mb-1">
+                            Ilosc arkuszy
+                        </label>
+                        <input type="number" name="quantity" value="1" min="1"
+                               class="w-full rounded-lg border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 py-1.5 text-sm">
+                    </div>
+
+                    <!-- Submit -->
                     <button type="submit"
-                            class="w-full bth-red-bg text-white py-2.5 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center">
+                            class="w-full bth-red-bg text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center text-sm">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                         Oblicz cene
                     </button>
 
-                    <!-- Reset Button -->
-                    <button type="reset" onclick="toggleDimensions()"
-                            class="w-full bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 py-2 px-4 rounded-lg font-medium hover:bg-steel-200 dark:hover:bg-steel-600 transition-colors text-sm">
+                    <!-- Reset -->
+                    <button type="reset" onclick="resetFilters()"
+                            class="w-full bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 py-1.5 px-4 rounded-lg font-medium hover:bg-steel-200 dark:hover:bg-steel-600 transition-colors text-xs">
                         Wyczysc filtry
                     </button>
                 </form>
             </div>
         </div>
 
-        <!-- Results Panel -->
-        <div class="lg:col-span-2">
-            <!-- Results Card -->
+        <!-- Results Panel - Wider -->
+        <div class="flex-1 min-w-0">
             <div class="bg-white dark:bg-steel-800 rounded-xl border border-steel-200 dark:border-steel-700 overflow-hidden">
-                <div class="px-5 py-3 border-b border-steel-200 dark:border-steel-700 flex justify-between items-center">
-                    <h2 class="text-base font-semibold flex items-center">
-                        <svg class="w-5 h-5 mr-2 bth-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="px-4 py-3 border-b border-steel-200 dark:border-steel-700 flex justify-between items-center">
+                    <h2 class="text-sm font-semibold flex items-center">
+                        <svg class="w-4 h-4 mr-2 bth-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                         </svg>
                         Wynik kalkulacji
@@ -243,37 +267,21 @@
                 </div>
 
                 <div id="price-table" class="overflow-x-auto">
-                    <!-- Table -->
+                    <!-- Initial empty state -->
                     <table class="min-w-full divide-y divide-steel-200 dark:divide-steel-700">
                         <thead class="bg-steel-50 dark:bg-steel-900">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                                    Material
-                                </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                                    Gatunek
-                                </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                                    Grubosc
-                                </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                                    Powierzchnia
-                                </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                                    Zrodlo
-                                </th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                                    PLN/kg
-                                </th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                                    PLN/m2
-                                </th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
-                                    PLN/arkusz
-                                </th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase">Gatunek</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase">Wymiar</th>
+                                <th class="px-3 py-2 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase">Obrobka</th>
+                                <th class="px-3 py-2 text-center text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase">Ilosc</th>
+                                <th class="px-3 py-2 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase">PLN/kg</th>
+                                <th class="px-3 py-2 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase">PLN/m2</th>
+                                <th class="px-3 py-2 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase">PLN/szt</th>
+                                <th class="px-3 py-2 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase">PLN razem</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white dark:bg-steel-800 divide-y divide-steel-200 dark:divide-steel-700">
+                        <tbody class="bg-white dark:bg-steel-800">
                             <tr>
                                 <td colspan="8" class="px-4 py-12 text-center">
                                     <div class="flex flex-col items-center">
@@ -283,7 +291,7 @@
                                             </svg>
                                         </div>
                                         <p class="text-steel-600 dark:text-steel-400 font-medium text-sm">Wybierz parametry</p>
-                                        <p class="text-steel-500 dark:text-steel-500 text-xs mt-1">Uzupelnij filtry i kliknij Oblicz cene</p>
+                                        <p class="text-steel-500 text-xs mt-1">Uzupelnij filtry i kliknij Oblicz cene</p>
                                     </div>
                                 </td>
                             </tr>
@@ -293,17 +301,78 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden element for filter options data -->
+    <div id="filter-options-data" class="hidden"></div>
 </div>
 
 <script>
-function toggleDimensions() {
-    const sourceType = document.getElementById('source-type').value;
+function updateMachineOptions() {
+    const thickness = parseFloat(document.getElementById('filter-thickness').value) || 0;
+    const machineSelect = document.getElementById('filter-machine');
+
+    // Aktualizuj dostepnosc maszyn na podstawie grubosci
+    const rbiOption = machineSelect.querySelector('option[value="RBI"]');
+    const athOption = machineSelect.querySelector('option[value="ATH"]');
+
+    if (thickness > 3) {
+        rbiOption.disabled = true;
+        rbiOption.textContent = 'RBI (max 3mm) - niedostepny';
+        if (machineSelect.value === 'RBI') {
+            machineSelect.value = 'ATH';
+        }
+    } else {
+        rbiOption.disabled = false;
+        rbiOption.textContent = 'RBI (do 3mm, 1500mm)';
+    }
+
+    if (thickness > 12) {
+        athOption.disabled = true;
+        athOption.textContent = 'ATH (max 12mm) - niedostepny';
+    } else {
+        athOption.disabled = false;
+        athOption.textContent = 'ATH (do 12mm, 2000mm)';
+    }
+
+    updateOperationOptions();
+}
+
+function updateOperationOptions() {
+    const machine = document.getElementById('filter-machine').value;
+    const operationSection = document.getElementById('operation-section');
+    const operationSelect = document.getElementById('filter-operation');
     const dimensionsSection = document.getElementById('dimensions-section');
 
-    if (sourceType === 'CTL' || sourceType === 'multiblanking') {
+    if (machine) {
+        operationSection.classList.remove('hidden');
         dimensionsSection.classList.remove('hidden');
+
+        // Multiblanking tylko dla RBI
+        const mbOption = operationSelect.querySelector('option[value="MULTIBLANKING"]');
+        if (machine === 'ATH') {
+            mbOption.disabled = true;
+            if (operationSelect.value === 'MULTIBLANKING') {
+                operationSelect.value = 'CTL';
+            }
+        } else {
+            mbOption.disabled = false;
+        }
     } else {
+        operationSection.classList.add('hidden');
         dimensionsSection.classList.add('hidden');
+    }
+
+    toggleMultiblankingFields();
+}
+
+function toggleMultiblankingFields() {
+    const operation = document.getElementById('filter-operation').value;
+    const multiblankingSection = document.getElementById('multiblanking-section');
+
+    if (operation === 'MULTIBLANKING') {
+        multiblankingSection.classList.remove('hidden');
+    } else {
+        multiblankingSection.classList.add('hidden');
     }
 }
 
@@ -313,15 +382,12 @@ function updateGritOptions() {
     const grindingDoubleSection = document.getElementById('grinding-double-section');
 
     if (provider && provider !== 'BORYS') {
-        // CAMU, BABCIA, COSTA - maja granulacje
         gritSection.classList.remove('hidden');
         grindingDoubleSection.classList.remove('hidden');
     } else if (provider === 'BORYS') {
-        // BORYS - nie ma granulacji
         gritSection.classList.add('hidden');
         grindingDoubleSection.classList.remove('hidden');
     } else {
-        // Brak szlifu
         gritSection.classList.add('hidden');
         grindingDoubleSection.classList.add('hidden');
     }
@@ -338,11 +404,20 @@ function toggleFilmDouble() {
     }
 }
 
-// Inicjalizacja po zaladowaniu strony
+function resetFilters() {
+    document.getElementById('operation-section').classList.add('hidden');
+    document.getElementById('dimensions-section').classList.add('hidden');
+    document.getElementById('multiblanking-section').classList.add('hidden');
+    document.getElementById('grit-section').classList.add('hidden');
+    document.getElementById('grinding-double-section').classList.add('hidden');
+    document.getElementById('film-double-section').classList.add('hidden');
+}
+
+// Inicjalizacja
 document.addEventListener('DOMContentLoaded', function() {
+    updateMachineOptions();
     updateGritOptions();
     toggleFilmDouble();
-    toggleDimensions();
 });
 </script>
 {% endblock %}
