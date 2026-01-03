@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  cennik-stali:
+    build: .
+    container_name: cennik-stali
+    restart: unless-stopped
+    ports:
+      - "8080:8000"
+    volumes:
+      - /volume2/docker/cennik/data:/app/data
+    environment:
+      - APP_NAME=Cennik Stali
+      - DEBUG=false
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+
+{% block title %}Import cennika - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header -->
+    <div class="mb-8">
+        <nav class="flex items-center gap-2 text-sm text-steel-500 mb-4">
+            <a href="/admin" class="hover:text-steel-700">Panel Admin</a>
+            <span>/</span>
+            <span class="text-steel-900 dark:text-white">Import cennika</span>
+        </nav>
+        <h1 class="text-3xl font-bold text-steel-900 dark:text-white">Import cennika</h1>
+        <p class="mt-2 text-steel-600 dark:text-steel-400">Importuj dane cennikowe z pliku Excel</p>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div id="step1" class="mb-8">
+        <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-lg border border-steel-200 dark:border-steel-700 p-6">
+            <h2 class="text-xl font-bold text-steel-900 dark:text-white mb-6">1. Wybierz plik</h2>
+
+            <div class="border-2 border-dashed border-steel-300 dark:border-steel-600 rounded-xl p-8 text-center"
+                 id="dropZone">
+                <svg class="w-16 h-16 mx-auto mb-4 text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p class="text-lg text-steel-600 dark:text-steel-400 mb-2">Przeciagnij plik tutaj lub</p>
+                <label class="inline-block">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event)">
+                    <span class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium cursor-pointer transition-colors">
+                        Wybierz plik
+                    </span>
+                </label>
+                <p class="mt-4 text-sm text-steel-500">Akceptowane formaty: .xlsx, .xls (max 10 MB)</p>
+            </div>
+
+            <div id="selectedFile" class="hidden mt-4 p-4 bg-steel-50 dark:bg-steel-800 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <div>
+                            <p id="fileName" class="font-medium text-steel-900 dark:text-white"></p>
+                            <p id="fileSize" class="text-sm text-steel-500"></p>
+                        </div>
+                    </div>
+                    <button onclick="clearFile()" class="text-steel-500 hover:text-red-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tryb importu -->
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-3">Tryb importu</label>
+                <div class="space-y-2">
+                    <label class="flex items-start gap-3 p-3 rounded-lg border border-steel-200 dark:border-steel-700 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-800">
+                        <input type="radio" name="import_mode" value="update_existing" checked class="mt-1 w-4 h-4 text-primary-600">
+                        <div>
+                            <span class="font-medium text-steel-900 dark:text-white">Aktualizuj istniejace ceny</span>
+                            <p class="text-sm text-steel-500">Tylko zmienia ceny dla istniejacych kombinacji</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-3 rounded-lg border border-steel-200 dark:border-steel-700 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-800">
+                        <input type="radio" name="import_mode" value="add_new" class="mt-1 w-4 h-4 text-primary-600">
+                        <div>
+                            <span class="font-medium text-steel-900 dark:text-white">Dodaj tylko nowe</span>
+                            <p class="text-sm text-steel-500">Dodaje tylko nowe kombinacje, nie zmienia istniejacych</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-3 rounded-lg border border-steel-200 dark:border-steel-700 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-800">
+                        <input type="radio" name="import_mode" value="full_sync" class="mt-1 w-4 h-4 text-primary-600">
+                        <div>
+                            <span class="font-medium text-steel-900 dark:text-white">Pelna synchronizacja</span>
+                            <p class="text-sm text-steel-500">Aktualizuje istniejace + dodaje nowe</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button id="analyzeBtn" onclick="analyzeFile()" disabled
+                    class="mt-6 w-full px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-steel-300 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors">
+                Analizuj plik
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 2: Preview -->
+    <div id="step2" class="hidden mb-8">
+        <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-lg border border-steel-200 dark:border-steel-700 p-6">
+            <h2 class="text-xl font-bold text-steel-900 dark:text-white mb-6">2. Podglad zmian</h2>
+
+            <!-- Ostrzezenia -->
+            <div id="warningsContainer" class="hidden mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <h4 class="font-medium text-yellow-800 dark:text-yellow-200 mb-2">Ostrzezenia:</h4>
+                <ul id="warningsList" class="text-sm text-yellow-700 dark:text-yellow-300 list-disc list-inside"></ul>
+            </div>
+
+            <!-- Podsumowanie -->
+            <div id="summary" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <div class="p-4 rounded-lg bg-steel-50 dark:bg-steel-800 text-center">
+                    <p class="text-2xl font-bold text-steel-900 dark:text-white" id="totalRows">0</p>
+                    <p class="text-sm text-steel-500">Razem wierszy</p>
+                </div>
+                <div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30 text-center">
+                    <p class="text-2xl font-bold text-green-600" id="addedRows">0</p>
+                    <p class="text-sm text-green-600">Nowych</p>
+                </div>
+                <div class="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 text-center">
+                    <p class="text-2xl font-bold text-yellow-600" id="updatedRows">0</p>
+                    <p class="text-sm text-yellow-600">Zmienionych</p>
+                </div>
+                <div class="p-4 rounded-lg bg-steel-50 dark:bg-steel-800 text-center">
+                    <p class="text-2xl font-bold text-steel-500" id="unchangedRows">0</p>
+                    <p class="text-sm text-steel-500">Bez zmian</p>
+                </div>
+                <div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/30 text-center">
+                    <p class="text-2xl font-bold text-red-600" id="errorRows">0</p>
+                    <p class="text-sm text-red-600">Bledow</p>
+                </div>
+            </div>
+
+            <!-- Tabela zmian -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-steel-200 dark:border-steel-700">
+                            <th class="px-4 py-3 text-left text-sm font-medium text-steel-500">Typ</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-steel-500">Gatunek/Dostawca</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-steel-500">Parametry</th>
+                            <th class="px-4 py-3 text-right text-sm font-medium text-steel-500">Obecna cena</th>
+                            <th class="px-4 py-3 text-right text-sm font-medium text-steel-500">Nowa cena</th>
+                            <th class="px-4 py-3 text-right text-sm font-medium text-steel-500">Zmiana</th>
+                        </tr>
+                    </thead>
+                    <tbody id="changesTable">
+                        <!-- Rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginacja -->
+            <div id="pagination" class="flex items-center justify-between mt-4 pt-4 border-t border-steel-200 dark:border-steel-700">
+                <p class="text-sm text-steel-500">Strona <span id="currentPage">1</span> z <span id="totalPages">1</span></p>
+                <div class="flex gap-2">
+                    <button onclick="loadPage(currentPage - 1)" id="prevBtn" disabled
+                            class="px-3 py-1 rounded border border-steel-300 text-steel-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-steel-50">
+                        Poprzednia
+                    </button>
+                    <button onclick="loadPage(currentPage + 1)" id="nextBtn"
+                            class="px-3 py-1 rounded border border-steel-300 text-steel-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-steel-50">
+                        Nastepna
+                    </button>
+                </div>
+            </div>
+
+            <!-- Akcje -->
+            <div class="flex gap-4 mt-6">
+                <button onclick="cancelImport()"
+                        class="flex-1 px-6 py-3 border border-steel-300 text-steel-700 hover:bg-steel-50 rounded-xl font-medium transition-colors">
+                    Anuluj
+                </button>
+                <button onclick="applyImport()" id="applyBtn"
+                        class="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors">
+                    Zastosuj import
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Result -->
+    <div id="step3" class="hidden mb-8">
+        <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-lg border border-steel-200 dark:border-steel-700 p-6 text-center">
+            <div id="resultIcon" class="w-20 h-20 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h2 id="resultTitle" class="text-2xl font-bold text-steel-900 dark:text-white mb-2">Import zakonczony pomyslnie</h2>
+            <p id="resultMessage" class="text-steel-600 dark:text-steel-400 mb-6"></p>
+
+            <div id="resultStats" class="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
+                <div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/30">
+                    <p class="text-xl font-bold text-green-600" id="resultAdded">0</p>
+                    <p class="text-sm text-green-600">Dodanych</p>
+                </div>
+                <div class="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/30">
+                    <p class="text-xl font-bold text-yellow-600" id="resultUpdated">0</p>
+                    <p class="text-sm text-yellow-600">Zaktualizowanych</p>
+                </div>
+                <div class="p-4 rounded-lg bg-steel-50 dark:bg-steel-800">
+                    <p class="text-xl font-bold text-steel-500" id="resultSkipped">0</p>
+                    <p class="text-sm text-steel-500">Pominiętych</p>
+                </div>
+            </div>
+
+            <div class="flex gap-4 justify-center">
+                <a href="/admin/import" class="px-6 py-3 border border-steel-300 text-steel-700 hover:bg-steel-50 rounded-xl font-medium transition-colors">
+                    Importuj kolejny plik
+                </a>
+                <a href="/admin" class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium transition-colors">
+                    Wróc do panelu
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historia importow -->
+    <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-lg border border-steel-200 dark:border-steel-700 p-6">
+        <h3 class="text-lg font-bold text-steel-900 dark:text-white mb-4">Historia importow</h3>
+        <div id="importHistory" class="space-y-3">
+            <div class="text-center py-8 text-steel-500">
+                <p>Ladowanie historii...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let selectedFile = null;
+    let importId = null;
+    let currentPage = 1;
+    let totalPages = 1;
+
+    // Drag and drop
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-primary-500', 'bg-primary-50');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-primary-500', 'bg-primary-50');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-primary-500', 'bg-primary-50');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            handleFile(file);
+        }
+    }
+
+    function handleFile(file) {
+        if (!file.name.match(/\.(xlsx|xls)$/i)) {
+            alert('Tylko pliki Excel (.xlsx, .xls) sa akceptowane');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Plik jest za duzy (max 10 MB)');
+            return;
+        }
+
+        selectedFile = file;
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        document.getElementById('selectedFile').classList.remove('hidden');
+        document.getElementById('analyzeBtn').disabled = false;
+    }
+
+    function clearFile() {
+        selectedFile = null;
+        document.getElementById('fileInput').value = '';
+        document.getElementById('selectedFile').classList.add('hidden');
+        document.getElementById('analyzeBtn').disabled = true;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    async function analyzeFile() {
+        if (!selectedFile) return;
+
+        const btn = document.getElementById('analyzeBtn');
+        btn.disabled = true;
+        btn.textContent = 'Analizowanie...';
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        try {
+            const response = await fetch('/api/admin/import/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Blad analizy pliku');
+            }
+
+            const data = await response.json();
+            importId = data.import_id;
+
+            // Update summary
+            document.getElementById('totalRows').textContent = data.total_rows || 0;
+            document.getElementById('addedRows').textContent = data.added || 0;
+            document.getElementById('updatedRows').textContent = data.updated || 0;
+            document.getElementById('unchangedRows').textContent = data.unchanged || 0;
+            document.getElementById('errorRows').textContent = data.error_rows || 0;
+
+            totalPages = data.total_pages || 1;
+            currentPage = 1;
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+
+            // Render changes table
+            renderChangesTable(data.items || []);
+
+            // Show warnings if any
+            const warningsContainer = document.getElementById('warningsContainer');
+            const warningsList = document.getElementById('warningsList');
+            if (data.warnings && data.warnings.length > 0) {
+                warningsList.replaceChildren();
+                data.warnings.forEach(warning => {
+                    const li = document.createElement('li');
+                    li.textContent = warning;
+                    warningsList.appendChild(li);
+                });
+                warningsContainer.classList.remove('hidden');
+            } else {
+                warningsContainer.classList.add('hidden');
+            }
+
+            // Show step 2
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Blad analizy:', error);
+            alert('Blad: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Analizuj plik';
+        }
+    }
+
+    function renderChangesTable(items) {
+        const tbody = document.getElementById('changesTable');
+        tbody.replaceChildren();
+
+        items.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-steel-100 dark:border-steel-800';
+
+            // Status badge
+            const statusTd = document.createElement('td');
+            statusTd.className = 'px-4 py-3';
+            const badge = document.createElement('span');
+            badge.className = 'px-2 py-1 text-xs font-medium rounded-full ';
+
+            if (item.change_type === 'added') {
+                badge.className += 'bg-green-100 text-green-700';
+                badge.textContent = 'NOWY';
+            } else if (item.change_type === 'updated') {
+                badge.className += 'bg-yellow-100 text-yellow-700';
+                badge.textContent = 'ZMIANA';
+            } else if (item.change_type === 'error') {
+                badge.className += 'bg-red-100 text-red-700';
+                badge.textContent = 'BLAD';
+            } else {
+                badge.className += 'bg-steel-100 text-steel-600';
+                badge.textContent = 'BEZ ZMIAN';
+            }
+            statusTd.appendChild(badge);
+
+            // Grade/Provider
+            const gradeTd = document.createElement('td');
+            gradeTd.className = 'px-4 py-3 font-medium text-steel-900 dark:text-white';
+            gradeTd.textContent = item.grade || item.provider || item.film_type || '-';
+
+            // Parameters
+            const paramsTd = document.createElement('td');
+            paramsTd.className = 'px-4 py-3 text-sm text-steel-600 dark:text-steel-400';
+            let params = [];
+            if (item.surface_finish) params.push(item.surface_finish);
+            if (item.thickness) params.push(item.thickness + 'mm');
+            if (item.width) params.push(item.width + 'mm');
+            if (item.grit) params.push(item.grit);
+            paramsTd.textContent = params.join(' | ') || '-';
+
+            // Current price
+            const currentTd = document.createElement('td');
+            currentTd.className = 'px-4 py-3 text-right text-steel-600 dark:text-steel-400';
+            currentTd.textContent = item.current_price ? item.current_price.toFixed(2) + ' PLN' : '-';
+
+            // New price
+            const newTd = document.createElement('td');
+            newTd.className = 'px-4 py-3 text-right font-medium text-steel-900 dark:text-white';
+            newTd.textContent = item.new_price ? item.new_price.toFixed(2) + ' PLN' : '-';
+
+            // Change
+            const changeTd = document.createElement('td');
+            changeTd.className = 'px-4 py-3 text-right';
+            if (item.price_change) {
+                const changeSpan = document.createElement('span');
+                if (item.price_change > 0) {
+                    changeSpan.className = 'text-green-600 font-medium';
+                    changeSpan.textContent = '+' + item.price_change.toFixed(2);
+                } else {
+                    changeSpan.className = 'text-red-600 font-medium';
+                    changeSpan.textContent = item.price_change.toFixed(2);
+                }
+                changeTd.appendChild(changeSpan);
+            } else {
+                changeTd.textContent = '-';
+            }
+
+            tr.appendChild(statusTd);
+            tr.appendChild(gradeTd);
+            tr.appendChild(paramsTd);
+            tr.appendChild(currentTd);
+            tr.appendChild(newTd);
+            tr.appendChild(changeTd);
+
+            tbody.appendChild(tr);
+        });
+
+        // Update pagination buttons
+        document.getElementById('prevBtn').disabled = currentPage <= 1;
+        document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+    }
+
+    async function loadPage(page) {
+        if (page < 1 || page > totalPages || !importId) return;
+
+        currentPage = page;
+
+        try {
+            const response = await fetch('/api/admin/import/' + importId + '/preview?page=' + page);
+            const data = await response.json();
+
+            document.getElementById('currentPage').textContent = currentPage;
+            renderChangesTable(data.items);
+        } catch (error) {
+            console.error('Blad ladowania strony:', error);
+        }
+    }
+
+    async function cancelImport() {
+        if (importId) {
+            try {
+                await fetch('/api/admin/import/' + importId, { method: 'DELETE' });
+            } catch (e) {}
+        }
+
+        importId = null;
+        currentPage = 1;
+        clearFile();
+
+        document.getElementById('step2').classList.add('hidden');
+        document.getElementById('step1').classList.remove('hidden');
+    }
+
+    async function applyImport() {
+        if (!importId) return;
+
+        const mode = document.querySelector('input[name="import_mode"]:checked').value;
+        const btn = document.getElementById('applyBtn');
+
+        if (!confirm('Czy na pewno chcesz zastosowac import? Ta operacja jest nieodwracalna.')) {
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Importowanie...';
+
+        try {
+            const response = await fetch('/api/admin/import/' + importId + '/apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: mode, confirm: true })
+            });
+
+            const data = await response.json();
+
+            // Show result
+            document.getElementById('resultAdded').textContent = data.records_added;
+            document.getElementById('resultUpdated').textContent = data.records_updated;
+            document.getElementById('resultSkipped').textContent = data.records_skipped;
+
+            if (data.success) {
+                document.getElementById('resultTitle').textContent = 'Import zakonczony pomyslnie';
+                document.getElementById('resultMessage').textContent =
+                    'Zaimportowano ' + (data.records_added + data.records_updated) + ' rekordow.';
+            } else {
+                document.getElementById('resultIcon').className = 'w-20 h-20 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center';
+                document.getElementById('resultTitle').textContent = 'Import zakonczony z bledami';
+                document.getElementById('resultMessage').textContent = 'Niektore rekordy nie zostaly zaimportowane.';
+            }
+
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+
+            loadHistory();
+
+        } catch (error) {
+            alert('Blad importu: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Zastosuj import';
+        }
+    }
+
+    function createHistoryItem(item) {
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-lg border border-steel-200 dark:border-steel-700 hover:bg-steel-50 dark:hover:bg-steel-800 transition-colors';
+
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between mb-1';
+
+        const fileName = document.createElement('span');
+        fileName.className = 'text-sm font-medium text-steel-900 dark:text-white';
+        fileName.textContent = item.file_name;
+
+        const statusBadge = document.createElement('span');
+        statusBadge.className = 'px-2 py-0.5 text-xs rounded-full ' +
+            (item.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+        statusBadge.textContent = item.status;
+
+        header.appendChild(fileName);
+        header.appendChild(statusBadge);
+
+        const details = document.createElement('div');
+        details.className = 'text-xs text-steel-500';
+        details.textContent = item.records_count + ' rekordow | ' + new Date(item.created_at).toLocaleString('pl-PL');
+
+        div.appendChild(header);
+        div.appendChild(details);
+
+        return div;
+    }
+
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/admin/import-export/history?operation_type=import&limit=10');
+            const data = await response.json();
+
+            const container = document.getElementById('importHistory');
+            container.replaceChildren();
+
+            if (data.items.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'text-center py-8 text-steel-500';
+                emptyMsg.textContent = 'Brak historii importow';
+                container.appendChild(emptyMsg);
+                return;
+            }
+
+            data.items.forEach(item => {
+                container.appendChild(createHistoryItem(item));
+            });
+        } catch (error) {
+            console.error('Blad ladowania historii:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}

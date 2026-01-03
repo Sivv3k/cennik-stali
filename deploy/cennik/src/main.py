@@ -11,7 +11,8 @@ from .config import get_settings
 from .database import init_db
 from .routers import materials_router, prices_router, import_export_router, admin_router, auth_router
 from .auth import require_admin
-from .models import User
+from .auth.permissions import require_role
+from .models import User, UserRole
 
 settings = get_settings()
 
@@ -157,6 +158,22 @@ async def admin_import(request: Request, user: User = Depends(require_admin)):
         {
             "request": request,
             "title": f"{settings.app_name} - Import Cennika",
+            "user": user,
+        },
+    )
+
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users(
+    request: Request,
+    user: User = Depends(require_role([UserRole.ADMIN])),
+):
+    """Panel administracyjny - zarzadzanie uzytkownikami (tylko admin)."""
+    return templates.TemplateResponse(
+        "admin/users.html",
+        {
+            "request": request,
+            "title": f"{settings.app_name} - Uzytkownicy",
             "user": user,
         },
     )

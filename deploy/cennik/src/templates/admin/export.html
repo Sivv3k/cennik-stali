@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Eksport cennika - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Header -->
+    <div class="mb-8">
+        <nav class="flex items-center gap-2 text-sm text-steel-500 mb-4">
+            <a href="/admin" class="hover:text-steel-700">Panel Admin</a>
+            <span>/</span>
+            <span class="text-steel-900 dark:text-white">Eksport cennika</span>
+        </nav>
+        <h1 class="text-3xl font-bold text-steel-900 dark:text-white">Eksport cennika</h1>
+        <p class="mt-2 text-steel-600 dark:text-steel-400">Eksportuj dane cennikowe do pliku Excel lub CSV</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Formularz eksportu -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-lg border border-steel-200 dark:border-steel-700 p-6">
+                <h2 class="text-xl font-bold text-steel-900 dark:text-white mb-6">Konfiguracja eksportu</h2>
+
+                <form id="exportForm" class="space-y-6">
+                    <!-- Format -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-3">Format pliku</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="format" value="xlsx" checked class="w-4 h-4 text-primary-600">
+                                <span class="text-steel-700 dark:text-steel-300">Excel (.xlsx)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="format" value="csv" class="w-4 h-4 text-primary-600">
+                                <span class="text-steel-700 dark:text-steel-300">CSV (.csv)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Typ danych -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-3">Dane do eksportu</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center gap-2 p-3 rounded-lg border border-steel-200 dark:border-steel-700 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-800 transition-colors">
+                                <input type="checkbox" name="data_type" value="base_prices" checked class="w-4 h-4 text-primary-600 rounded">
+                                <span class="text-steel-700 dark:text-steel-300">Ceny bazowe</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-lg border border-steel-200 dark:border-steel-700 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-800 transition-colors">
+                                <input type="checkbox" name="data_type" value="grinding" checked class="w-4 h-4 text-primary-600 rounded">
+                                <span class="text-steel-700 dark:text-steel-300">Cennik szlifu</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-lg border border-steel-200 dark:border-steel-700 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-800 transition-colors">
+                                <input type="checkbox" name="data_type" value="film" checked class="w-4 h-4 text-primary-600 rounded">
+                                <span class="text-steel-700 dark:text-steel-300">Cennik folii</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-lg border border-steel-200 dark:border-steel-700 cursor-pointer hover:bg-steel-50 dark:hover:bg-steel-800 transition-colors">
+                                <input type="checkbox" name="data_type" value="modifiers" class="w-4 h-4 text-primary-600 rounded">
+                                <span class="text-steel-700 dark:text-steel-300">Modyfikatory</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Kategorie -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-3">Kategorie materialow</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="toggleCategory(this, 'stal_nierdzewna')"
+                                    class="category-btn px-4 py-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-medium transition-colors"
+                                    data-selected="true">
+                                INOX
+                            </button>
+                            <button type="button" onclick="toggleCategory(this, 'stal_czarna')"
+                                    class="category-btn px-4 py-2 rounded-lg border-2 border-steel-300 text-steel-600 font-medium transition-colors hover:border-steel-400"
+                                    data-selected="false">
+                                MILD
+                            </button>
+                            <button type="button" onclick="toggleCategory(this, 'aluminium')"
+                                    class="category-btn px-4 py-2 rounded-lg border-2 border-steel-300 text-steel-600 font-medium transition-colors hover:border-steel-400"
+                                    data-selected="false">
+                                ALU
+                            </button>
+                        </div>
+                        <input type="hidden" name="categories" id="categoriesInput" value="stal_nierdzewna">
+                    </div>
+
+                    <!-- Filtry grubosci -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-3">Zakres grubosci (mm)</label>
+                        <div class="flex items-center gap-4">
+                            <input type="number" name="thickness_min" step="0.1" min="0" placeholder="Od"
+                                   class="w-24 px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white">
+                            <span class="text-steel-500">-</span>
+                            <input type="number" name="thickness_max" step="0.1" min="0" placeholder="Do"
+                                   class="w-24 px-3 py-2 rounded-lg border border-steel-300 dark:border-steel-600 bg-white dark:bg-steel-800 text-steel-900 dark:text-white">
+                        </div>
+                    </div>
+
+                    <!-- Wykoncznie -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-3">Wykoncznie powierzchni</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="toggleFinish(this, '2B')"
+                                    class="finish-btn px-3 py-1.5 rounded-lg border border-steel-300 text-steel-600 text-sm font-medium transition-colors hover:border-primary-500"
+                                    data-selected="false">
+                                2B
+                            </button>
+                            <button type="button" onclick="toggleFinish(this, 'BA')"
+                                    class="finish-btn px-3 py-1.5 rounded-lg border border-steel-300 text-steel-600 text-sm font-medium transition-colors hover:border-primary-500"
+                                    data-selected="false">
+                                BA
+                            </button>
+                            <button type="button" onclick="toggleFinish(this, '1D')"
+                                    class="finish-btn px-3 py-1.5 rounded-lg border border-steel-300 text-steel-600 text-sm font-medium transition-colors hover:border-primary-500"
+                                    data-selected="false">
+                                1D
+                            </button>
+                            <button type="button" onclick="toggleFinish(this, 'LEN')"
+                                    class="finish-btn px-3 py-1.5 rounded-lg border border-steel-300 text-steel-600 text-sm font-medium transition-colors hover:border-primary-500"
+                                    data-selected="false">
+                                LEN
+                            </button>
+                            <button type="button" onclick="toggleFinish(this, 'RYFEL ASTM')"
+                                    class="finish-btn px-3 py-1.5 rounded-lg border border-steel-300 text-steel-600 text-sm font-medium transition-colors hover:border-primary-500"
+                                    data-selected="false">
+                                RYFEL
+                            </button>
+                        </div>
+                        <input type="hidden" name="surface_finishes" id="finishesInput" value="">
+                        <p class="mt-2 text-xs text-steel-500">Nie wybrano = wszystkie wykoncznie</p>
+                    </div>
+
+                    <!-- Tylko aktywne -->
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="only_active" checked class="w-4 h-4 text-primary-600 rounded">
+                            <span class="text-steel-700 dark:text-steel-300">Tylko aktywne ceny</span>
+                        </label>
+                    </div>
+
+                    <!-- Przyciski -->
+                    <div class="flex gap-4 pt-4">
+                        <button type="button" onclick="exportData()"
+                                class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Eksportuj
+                        </button>
+                        <button type="button" onclick="exportAll()"
+                                class="px-6 py-3 bg-steel-600 hover:bg-steel-700 text-white rounded-xl font-medium transition-colors">
+                            Eksportuj wszystko
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Historia eksportow -->
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-steel-900 rounded-2xl shadow-lg border border-steel-200 dark:border-steel-700 p-6">
+                <h3 class="text-lg font-bold text-steel-900 dark:text-white mb-4">Historia eksportow</h3>
+                <div id="exportHistory" class="space-y-3">
+                    <div class="text-center py-8 text-steel-500">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p>Ladowanie historii...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let selectedCategories = ['stal_nierdzewna'];
+    let selectedFinishes = [];
+
+    function toggleCategory(btn, category) {
+        const isSelected = btn.dataset.selected === 'true';
+
+        if (isSelected) {
+            selectedCategories = selectedCategories.filter(c => c !== category);
+            btn.dataset.selected = 'false';
+            btn.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+            btn.classList.add('border-steel-300', 'text-steel-600');
+        } else {
+            selectedCategories.push(category);
+            btn.dataset.selected = 'true';
+            btn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+            btn.classList.remove('border-steel-300', 'text-steel-600');
+        }
+
+        document.getElementById('categoriesInput').value = selectedCategories.join(',');
+    }
+
+    function toggleFinish(btn, finish) {
+        const isSelected = btn.dataset.selected === 'true';
+
+        if (isSelected) {
+            selectedFinishes = selectedFinishes.filter(f => f !== finish);
+            btn.dataset.selected = 'false';
+            btn.classList.remove('border-primary-500', 'bg-primary-50', 'text-primary-700');
+            btn.classList.add('border-steel-300', 'text-steel-600');
+        } else {
+            selectedFinishes.push(finish);
+            btn.dataset.selected = 'true';
+            btn.classList.add('border-primary-500', 'bg-primary-50', 'text-primary-700');
+            btn.classList.remove('border-steel-300', 'text-steel-600');
+        }
+
+        document.getElementById('finishesInput').value = selectedFinishes.join(',');
+    }
+
+    function exportData() {
+        const form = document.getElementById('exportForm');
+        const formData = new FormData(form);
+
+        const format = formData.get('format');
+        const categories = formData.get('categories');
+        const thicknessMin = formData.get('thickness_min');
+        const thicknessMax = formData.get('thickness_max');
+        const surfaceFinishes = formData.get('surface_finishes');
+        const onlyActive = formData.get('only_active') === 'on';
+
+        const dataTypes = Array.from(form.querySelectorAll('input[name="data_type"]:checked'))
+            .map(cb => cb.value);
+
+        if (dataTypes.length === 0) {
+            alert('Wybierz co najmniej jeden typ danych do eksportu');
+            return;
+        }
+
+        let url = '/api/admin/export/';
+
+        if (dataTypes.length === 4 || (dataTypes.includes('base_prices') && dataTypes.includes('grinding') && dataTypes.includes('film'))) {
+            url += 'all';
+        } else if (dataTypes.includes('base_prices')) {
+            url += 'base-prices';
+        } else if (dataTypes.includes('grinding')) {
+            url += 'grinding';
+        } else if (dataTypes.includes('film')) {
+            url += 'film';
+        } else if (dataTypes.includes('modifiers')) {
+            url += 'modifiers';
+        }
+
+        const params = new URLSearchParams();
+        if (format) params.append('format', format);
+        if (categories) params.append('categories', categories);
+        if (thicknessMin) params.append('thickness_min', thicknessMin);
+        if (thicknessMax) params.append('thickness_max', thicknessMax);
+        if (surfaceFinishes) params.append('surface_finishes', surfaceFinishes);
+        params.append('only_active', onlyActive);
+
+        window.location.href = url + '?' + params.toString();
+        setTimeout(loadHistory, 1000);
+    }
+
+    function exportAll() {
+        window.location.href = '/api/admin/export/all?only_active=true';
+        setTimeout(loadHistory, 1000);
+    }
+
+    function createHistoryItem(item) {
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-lg border border-steel-200 dark:border-steel-700 hover:bg-steel-50 dark:hover:bg-steel-800 transition-colors';
+
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between mb-1';
+
+        const fileName = document.createElement('span');
+        fileName.className = 'text-sm font-medium text-steel-900 dark:text-white';
+        fileName.textContent = item.file_name;
+
+        const statusBadge = document.createElement('span');
+        statusBadge.className = 'px-2 py-0.5 text-xs rounded-full ' +
+            (item.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+        statusBadge.textContent = item.status;
+
+        header.appendChild(fileName);
+        header.appendChild(statusBadge);
+
+        const details = document.createElement('div');
+        details.className = 'text-xs text-steel-500';
+        details.textContent = item.data_type + ' | ' + item.records_count + ' rekordow | ' +
+            new Date(item.created_at).toLocaleString('pl-PL');
+
+        div.appendChild(header);
+        div.appendChild(details);
+
+        return div;
+    }
+
+    function showEmptyHistory() {
+        const container = document.getElementById('exportHistory');
+        container.replaceChildren();
+
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'text-center py-8 text-steel-500';
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'w-12 h-12 mx-auto mb-3 opacity-50');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('viewBox', '0 0 24 24');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z');
+        svg.appendChild(path);
+
+        const p = document.createElement('p');
+        p.textContent = 'Brak historii eksportow';
+
+        emptyDiv.appendChild(svg);
+        emptyDiv.appendChild(p);
+        container.appendChild(emptyDiv);
+    }
+
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/admin/import-export/history?operation_type=export&limit=10');
+            const data = await response.json();
+
+            const container = document.getElementById('exportHistory');
+
+            if (data.items.length === 0) {
+                showEmptyHistory();
+                return;
+            }
+
+            container.replaceChildren();
+            data.items.forEach(item => {
+                container.appendChild(createHistoryItem(item));
+            });
+        } catch (error) {
+            console.error('Blad ladowania historii:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}

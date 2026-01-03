@@ -1,0 +1,94 @@
+<!-- Fragment tabeli cennikowej (do ładowania przez HTMX) -->
+<table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+        <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Materiał
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Gatunek
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Grubość
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Powierzchnia
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Wykończenie
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Źródło
+            </th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Folia
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                PLN/kg
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                PLN/m²
+            </th>
+        </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+        {% for row in prices %}
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                {{ row.material_name }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ row.grade }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ row.thickness }} mm
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ row.surface_type or '-' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ row.finish or '-' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                    {% if row.source_type == 'CTL' %}
+                        bg-blue-100 text-blue-800
+                    {% elif row.source_type == 'multiblanking' %}
+                        bg-purple-100 text-purple-800
+                    {% else %}
+                        bg-gray-100 text-gray-800
+                    {% endif %}">
+                    {{ row.source_type }}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                {% if row.protective_film %}
+                    <span class="text-green-600">✓</span>
+                {% else %}
+                    <span class="text-gray-300">-</span>
+                {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                {% if row.price_per_kg %}
+                    {{ "%.2f"|format(row.price_per_kg) }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                {% if row.price_per_m2 %}
+                    {{ "%.2f"|format(row.price_per_m2) }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                Brak wyników dla podanych kryteriów.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Kalkulator cen - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Page Header -->
+    <div class="mb-10">
+        <h1 class="text-3xl font-bold mb-2">Kalkulator <span class="gradient-text">cennika</span></h1>
+        <p class="text-steel-600 dark:text-steel-400">
+            Oblicz cenę materiałów z uwzględnieniem wszystkich parametrów.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Filters Panel -->
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-steel-800 rounded-2xl border border-steel-200 dark:border-steel-700 p-6 sticky top-24">
+                <h2 class="text-lg font-semibold mb-6 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Filtry
+                </h2>
+
+                <form hx-get="/api/prices" hx-target="#price-table" hx-swap="innerHTML" hx-indicator="#loading"
+                      class="space-y-5">
+
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">
+                            Kategoria materiału
+                        </label>
+                        <select name="category"
+                                class="w-full rounded-xl border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2.5">
+                            <option value="">Wszystkie kategorie</option>
+                            <option value="stal_nierdzewna">Stal nierdzewna</option>
+                            <option value="stal_czarna">Stal czarna</option>
+                            <option value="aluminium">Aluminium</option>
+                        </select>
+                    </div>
+
+                    <!-- Grade -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">
+                            Gatunek
+                        </label>
+                        <select name="grade"
+                                class="w-full rounded-xl border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2.5">
+                            <option value="">Wszystkie gatunki</option>
+                            <optgroup label="Stal nierdzewna">
+                                <option value="304">304</option>
+                                <option value="304L">304L</option>
+                                <option value="316">316</option>
+                                <option value="316L">316L</option>
+                                <option value="430">430</option>
+                            </optgroup>
+                            <optgroup label="Stal czarna">
+                                <option value="DC01">DC01</option>
+                                <option value="DC03">DC03</option>
+                                <option value="DC04">DC04</option>
+                                <option value="S235">S235</option>
+                                <option value="S355">S355</option>
+                            </optgroup>
+                            <optgroup label="Aluminium">
+                                <option value="1050">1050</option>
+                                <option value="5754">5754</option>
+                                <option value="5083">5083</option>
+                                <option value="6061">6061</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- Source Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">
+                            Źródło materiału
+                        </label>
+                        <select name="source_type"
+                                class="w-full rounded-xl border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2.5">
+                            <option value="">Wszystkie źródła</option>
+                            <option value="CTL">CTL (Cut To Length)</option>
+                            <option value="multiblanking">Multiblanking</option>
+                            <option value="arkusz">Arkusz standardowy</option>
+                        </select>
+                    </div>
+
+                    <!-- Thickness -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">
+                            Grubość (mm)
+                        </label>
+                        <input type="number" name="thickness" step="0.1" placeholder="np. 1.5"
+                               class="w-full rounded-xl border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2.5">
+                    </div>
+
+                    <!-- Surface -->
+                    <div>
+                        <label class="block text-sm font-medium text-steel-700 dark:text-steel-300 mb-2">
+                            Powierzchnia
+                        </label>
+                        <select name="surface"
+                                class="w-full rounded-xl border-steel-300 dark:border-steel-600 bg-steel-50 dark:bg-steel-900 text-steel-900 dark:text-steel-100 focus:border-primary-500 focus:ring-primary-500 py-2.5">
+                            <option value="">Wszystkie</option>
+                            <option value="2B">2B</option>
+                            <option value="BA">BA (Bright Annealed)</option>
+                            <option value="No.4">No.4 (Szczotkowana)</option>
+                            <option value="HL">HL (Hairline)</option>
+                            <option value="mirror">Mirror (Lustro)</option>
+                        </select>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit"
+                            class="w-full gradient-bg text-white py-3 px-4 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        Szukaj
+                    </button>
+
+                    <!-- Reset Button -->
+                    <button type="reset"
+                            class="w-full bg-steel-100 dark:bg-steel-700 text-steel-700 dark:text-steel-300 py-2.5 px-4 rounded-xl font-medium hover:bg-steel-200 dark:hover:bg-steel-600 transition-colors text-sm">
+                        Wyczyść filtry
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="lg:col-span-2">
+            <!-- Results Card -->
+            <div class="bg-white dark:bg-steel-800 rounded-2xl border border-steel-200 dark:border-steel-700 overflow-hidden">
+                <div class="px-6 py-4 border-b border-steel-200 dark:border-steel-700 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        Tabela cennikowa
+                    </h2>
+
+                    <!-- Loading indicator -->
+                    <div id="loading" class="htmx-indicator">
+                        <svg class="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div id="price-table" class="overflow-x-auto">
+                    <!-- Table -->
+                    <table class="min-w-full divide-y divide-steel-200 dark:divide-steel-700">
+                        <thead class="bg-steel-50 dark:bg-steel-900">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                                    Materiał
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                                    Gatunek
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                                    Grubość
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                                    Powierzchnia
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                                    Źródło
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                                    PLN/kg
+                                </th>
+                                <th class="px-6 py-3 text-right text-xs font-semibold text-steel-500 dark:text-steel-400 uppercase tracking-wider">
+                                    PLN/m²
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-steel-800 divide-y divide-steel-200 dark:divide-steel-700">
+                            <tr>
+                                <td colspan="7" class="px-6 py-16 text-center">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-16 h-16 rounded-full bg-steel-100 dark:bg-steel-700 flex items-center justify-center mb-4">
+                                            <svg class="w-8 h-8 text-steel-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                        </div>
+                                        <p class="text-steel-600 dark:text-steel-400 font-medium mb-2">Brak danych cennikowych</p>
+                                        <p class="text-steel-500 dark:text-steel-500 text-sm">Zaimportuj cennik z pliku Excel lub skorzystaj z filtrów.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Import Section -->
+            <div class="mt-8 bg-white dark:bg-steel-800 rounded-2xl border border-steel-200 dark:border-steel-700 p-6">
+                <h2 class="text-lg font-semibold mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    Import danych
+                </h2>
+
+                <form hx-post="/api/import/excel" hx-encoding="multipart/form-data"
+                      hx-target="#import-result" hx-swap="innerHTML" hx-indicator="#import-loading"
+                      class="space-y-4">
+
+                    <div class="border-2 border-dashed border-steel-300 dark:border-steel-600 rounded-xl p-6 text-center hover:border-primary-500 transition-colors">
+                        <input type="file" name="file" accept=".xlsx,.xls" id="file-input" class="hidden">
+                        <label for="file-input" class="cursor-pointer">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-10 h-10 text-steel-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <p class="text-steel-600 dark:text-steel-400 font-medium">Kliknij lub przeciągnij plik</p>
+                                <p class="text-steel-500 dark:text-steel-500 text-sm mt-1">.xlsx, .xls (max 10MB)</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button type="submit"
+                                class="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-xl font-medium hover:bg-green-700 transition-colors flex items-center justify-center">
+                            <svg id="import-loading" class="htmx-indicator animate-spin -ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Importuj plik
+                        </button>
+                    </div>
+                </form>
+
+                <div id="import-result" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Show file name when selected
+    document.getElementById('file-input').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        if (fileName) {
+            const label = this.closest('label');
+            label.querySelector('p.font-medium').textContent = fileName;
+        }
+    });
+</script>
+{% endblock %}

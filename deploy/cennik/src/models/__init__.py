@@ -34,7 +34,7 @@ from .processing import (
 
 from .surface import Surface, SurfaceType, Finish
 
-from .user import User
+from .user import User, UserRole, ApiKey
 
 __all__ = [
     # Material
@@ -69,4 +69,6 @@ __all__ = [
     "Finish",
     # User
     "User",
+    "UserRole",
+    "ApiKey",
 ]
