@@ -9,12 +9,25 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 DEPLOY_DIR="$PROJECT_DIR/deploy/cennik"
 OUTPUT_DIR="$PROJECT_DIR/deploy"
 PACKAGE_NAME="cennik-stali-deploy"
+CONFIG_FILE="$PROJECT_DIR/.syno_docker"
 
 echo "=== Pakowanie Cennik Stali do wdrozenia ==="
-echo "Katalog projektu: $PROJECT_DIR"
 echo ""
 
-# Przejdz do katalogu projektu
+# Wczytaj konfiguracje z .syno_docker
+if [ -f "$CONFIG_FILE" ]; then
+    echo "Wczytywanie konfiguracji z .syno_docker..."
+    source "$CONFIG_FILE"
+    echo "  Sciezka Synology: $SYNOLOGY_PATH"
+    echo "  PostgreSQL: $POSTGRES_HOST:$POSTGRES_PORT"
+    echo "  Baza: $POSTGRES_DB"
+    echo ""
+else
+    echo "UWAGA: Brak pliku .syno_docker - uzywam domyslnych wartosci"
+    SYNOLOGY_PATH="/volume2/docker/cennik"
+    DATABASE_URL="postgresql://cennik_user:silne_haslo_123@172.16.10.201:2665/cennik_stali"
+fi
+
 cd "$PROJECT_DIR"
 
 # Utworz katalog tymczasowy
@@ -32,23 +45,24 @@ cp requirements.txt "$PACKAGE_DIR/"
 echo "2. Kopiowanie plikow Docker..."
 cp "$DEPLOY_DIR/Dockerfile" "$PACKAGE_DIR/"
 cp "$DEPLOY_DIR/docker-compose.yml" "$PACKAGE_DIR/"
-cp "$DEPLOY_DIR/.env" "$PACKAGE_DIR/"
 
-echo "3. Kopiowanie instrukcji..."
+echo "3. Generowanie .env z konfiguracja..."
+SECRET_KEY=$(openssl rand -hex 32)
+cat > "$PACKAGE_DIR/.env" << EOF
+SECRET_KEY=$SECRET_KEY
+DATABASE_URL=$DATABASE_URL
+EOF
+
+echo "4. Kopiowanie instrukcji..."
 cp "$OUTPUT_DIR/INSTALL.md" "$PACKAGE_DIR/"
 
-echo "4. Tworzenie katalogu data..."
+echo "5. Tworzenie katalogu data..."
 mkdir -p "$PACKAGE_DIR/data/imports"
 mkdir -p "$PACKAGE_DIR/data/exports"
 
-echo "5. Generowanie SECRET_KEY..."
-SECRET_KEY=$(openssl rand -hex 32)
-sed -i.bak "s/ZMIEN_NA_LOSOWY_KLUCZ_32_ZNAKI/$SECRET_KEY/" "$PACKAGE_DIR/.env"
-rm -f "$PACKAGE_DIR/.env.bak"
-
 echo "6. Tworzenie archiwum..."
 cd "$TEMP_DIR"
-tar -czvf "$OUTPUT_DIR/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+tar -czvf "$OUTPUT_DIR/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME" > /dev/null
 
 echo "7. Sprzatanie..."
 rm -rf "$TEMP_DIR"
@@ -58,12 +72,14 @@ echo "=== Gotowe! ==="
 echo "Archiwum: $OUTPUT_DIR/$PACKAGE_NAME.tar.gz"
 echo ""
 echo "Nastepne kroki:"
-echo "1. Skopiuj archiwum na Synology:"
-echo "   scp $OUTPUT_DIR/$PACKAGE_NAME.tar.gz user@synology:/volume2/docker/"
+echo "1. Skopiuj na Synology:"
+echo "   scp $OUTPUT_DIR/$PACKAGE_NAME.tar.gz user@synology:$SYNOLOGY_PATH/../"
 echo ""
-echo "2. Na Synology rozpakuj i uruchom:"
-echo "   cd /volume2/docker"
+echo "2. Na Synology:"
+echo "   cd $SYNOLOGY_PATH/.."
 echo "   tar -xzvf $PACKAGE_NAME.tar.gz"
-echo "   cd $PACKAGE_NAME"
+echo "   mv $PACKAGE_NAME cennik"
+echo "   cd cennik"
+echo "   docker network create proxy 2>/dev/null || true"
 echo "   docker-compose up -d --build"
 echo ""

@@ -8,16 +8,12 @@ services:
     ports:
       - "8080:8000"
     volumes:
-      # Dane aplikacji (SQLite, importy, eksporty)
-      - ./data:/app/data
+      - /volume2/docker/cennik/data:/app/data
     environment:
       - APP_NAME=Cennik Stali BTH Impost
       - DEBUG=false
       - SECRET_KEY=${SECRET_KEY}
-      # SQLite (domyslnie) - baza w /app/data/cennik.db
-      - DATABASE_URL=sqlite:///./data/cennik.db
-      # Lub PostgreSQL (odkomentuj ponizej, zakomentuj SQLite powyzej)
-      # - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=${DATABASE_URL}
     env_file:
       - .env
     networks:

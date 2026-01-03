@@ -1,0 +1,21 @@
+# Konfiguracja Synology Docker dla Cennik Stali
+# ==============================================
+
+# Sciezka na Synology
+SYNOLOGY_PATH=/volume2/docker/cennik
+
+# PostgreSQL
+POSTGRES_HOST=172.16.10.201
+POSTGRES_PORT=2665
+POSTGRES_DB=cennik_stali
+POSTGRES_USER=cennik_user
+POSTGRES_PASSWORD=silne_haslo_123
+DATABASE_URL=postgresql://cennik_user:silne_haslo_123@172.16.10.201:2665/cennik_stali
+
+# Aplikacja
+APP_NAME="Cennik Stali BTH Impost"
+APP_PORT=8080
+CONTAINER_NAME=cennik-stali
+
+# Siec Docker
+DOCKER_NETWORK=proxy
