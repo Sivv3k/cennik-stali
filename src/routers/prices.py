@@ -60,11 +60,16 @@ async def list_prices_html(
     if category:
         query = query.join(Material).filter(Material.category == category)
 
-    # Filtrowanie po gatunku
+    # Filtrowanie po gatunku (obsluga AISI i EN)
     if grade:
         if not category:
             query = query.join(Material)
-        query = query.filter(Material.grade == grade)
+        # Szukaj w grade LUB w nazwie materialu (304 -> 1.4301 lub "Stal nierdzewna 304")
+        query = query.filter(
+            (Material.grade == grade) |
+            (Material.grade.ilike(f"%{grade}%")) |
+            (Material.name.ilike(f"%{grade}%"))
+        )
 
     # Filtrowanie po grubosci
     if thickness_val:
