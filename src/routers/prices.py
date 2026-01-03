@@ -2,19 +2,77 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session, joinedload
 
 from ..database import get_db
-from ..models.material import MaterialCategory
+from ..models.material import Material, MaterialCategory
 from ..models.price import BasePrice
 from ..schemas.pricing import BasePriceCreate, BasePriceResponse
 
 router = APIRouter(prefix="/api/prices", tags=["prices"])
+templates = Jinja2Templates(directory="src/templates")
 
 
-@router.get("/", response_model=list[BasePriceResponse])
-async def list_prices(
+@router.get("/", response_class=HTMLResponse)
+async def list_prices_html(
+    request: Request,
+    category: Optional[str] = Query(None),
+    grade: Optional[str] = Query(None),
+    source_type: Optional[str] = Query(None),
+    thickness: Optional[float] = Query(None),
+    surface: Optional[str] = Query(None),
+    limit: int = Query(100, le=500),
+    db: Session = Depends(get_db),
+):
+    """Pobierz liste cen jako HTML (dla HTMX)."""
+    query = db.query(BasePrice).options(joinedload(BasePrice.material)).filter(BasePrice.is_active == True)
+
+    # Filtrowanie po kategorii materialu
+    if category:
+        query = query.join(Material).filter(Material.category == category)
+
+    # Filtrowanie po gatunku
+    if grade:
+        if not category:
+            query = query.join(Material)
+        query = query.filter(Material.grade == grade)
+
+    # Filtrowanie po grubosci
+    if thickness:
+        query = query.filter(BasePrice.thickness == thickness)
+
+    # Filtrowanie po powierzchni
+    if surface:
+        query = query.filter(BasePrice.surface_finish == surface)
+
+    prices = query.limit(limit).all()
+
+    # Przygotuj dane dla szablonu
+    price_rows = []
+    for p in prices:
+        price_rows.append({
+            "material_name": p.material.name if p.material else "?",
+            "grade": p.material.grade if p.material else "?",
+            "thickness": p.thickness,
+            "surface_type": p.surface_finish,
+            "finish": p.surface_finish,
+            "source_type": source_type or "arkusz",
+            "protective_film": False,
+            "price_per_kg": p.price_pln_per_kg,
+            "price_per_m2": p.price_pln_per_kg * p.thickness * 7.9 / 1000 if p.price_pln_per_kg else None,
+        })
+
+    return templates.TemplateResponse(
+        "price_table.html",
+        {"request": request, "prices": price_rows}
+    )
+
+
+@router.get("/json", response_model=list[BasePriceResponse])
+async def list_prices_json(
     material_id: Optional[int] = Query(None, description="Filtruj po materiale"),
     category: Optional[MaterialCategory] = Query(None, description="Filtruj po kategorii"),
     thickness: Optional[float] = Query(None, description="Filtruj po grubości"),
@@ -22,7 +80,7 @@ async def list_prices(
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
-    """Pobierz liste cen z opcjonalnymi filtrami."""
+    """Pobierz liste cen jako JSON."""
     query = db.query(BasePrice).filter(BasePrice.is_active == True)
 
     if material_id:
@@ -30,8 +88,6 @@ async def list_prices(
 
     if thickness:
         query = query.filter(BasePrice.thickness == thickness)
-
-    # TODO: Filtrowanie po kategorii wymaga joina z materials
 
     return query.offset(offset).limit(limit).all()
 
